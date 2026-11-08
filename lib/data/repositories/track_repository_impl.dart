@@ -278,6 +278,42 @@ class TrackRepositoryImpl implements TrackRepository {
   }
 
   @override
+  Future<Result<List<String>, Failure>> getFolders() async {
+    try {
+      final folders = await _localDataSource.getFolders();
+      return Result.ok(folders);
+    } catch (e, stack) {
+      _logger?.error('Error fetching music folders', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get folders: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Track>, Failure>> getTracksInFolder(String folderPath) async {
+    try {
+      final tracks = await _localDataSource.getTracksInFolder(folderPath);
+      return Result.ok(tracks);
+    } catch (e, stack) {
+      _logger?.error('Error fetching tracks in folder: $folderPath', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get folder tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<String>, Failure>> cleanMissingLocalFiles() async {
+    try {
+      final cleaned = await _localDataSource.cleanMissingLocalFiles();
+      if (cleaned.isNotEmpty) {
+        _notifyTrackCountChanged();
+      }
+      return Result.ok(cleaned);
+    } catch (e, stack) {
+      _logger?.error('Error cleaning missing tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to clean missing tracks: $e', cause: e));
+    }
+  }
+
+  @override
   Stream<int> watchTrackCount() {
     _notifyTrackCountChanged();
     return _trackCountController.stream;

@@ -26,6 +26,7 @@ abstract class HistoryRepository {
     required Track track,
     required Duration playedDuration,
     required bool completed,
+    DateTime? playedAt,
   });
 
   /// Retrieves recent playback history.
@@ -33,6 +34,18 @@ abstract class HistoryRepository {
 
   /// Retrieves most frequently played tracks.
   Future<Result<List<Track>, Failure>> getMostPlayedTracks({int limit = 20});
+
+  /// Returns total play count for a track.
+  Future<Result<int, Failure>> getPlayCount(String trackId);
+
+  /// Returns the last played timestamp for a track.
+  Future<Result<DateTime?, Failure>> getLastPlayed(String trackId);
+
+  /// Removes an individual history item by its ID.
+  Future<Result<void, Failure>> deleteHistoryItem(String historyId);
+
+  /// Searches listening history by query.
+  Future<Result<List<PlayHistoryItem>, Failure>> searchHistory(String query);
 
   /// Clears listening history.
   Future<Result<void, Failure>> clearHistory();

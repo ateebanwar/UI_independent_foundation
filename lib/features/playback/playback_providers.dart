@@ -46,3 +46,25 @@ final playbackPositionStreamProvider = StreamProvider<Duration>((ref) {
   return engine.positionStream;
 });
 
+/// Direct playback state provider alias for easy consumption.
+final playbackStateProvider = Provider<PlaybackState>((ref) {
+  return ref.watch(currentPlaybackStateProvider);
+});
+
+/// Sleep timer stream provider emitting remaining duration.
+final sleepTimerStreamProvider = StreamProvider<Duration?>((ref) {
+  final repo = ref.watch(playbackRepositoryProvider);
+  return repo.sleepTimerStream;
+});
+
+/// Current remaining duration for sleep timer.
+final sleepTimerRemainingProvider = Provider<Duration?>((ref) {
+  final asyncRemaining = ref.watch(sleepTimerStreamProvider);
+  return asyncRemaining.valueOrNull ?? ref.watch(playbackRepositoryProvider).currentSleepTimerRemaining;
+});
+
+/// Current crossfade duration provider.
+final crossfadeDurationProvider = Provider<Duration>((ref) {
+  return ref.watch(playbackRepositoryProvider).crossfadeDuration;
+});
+

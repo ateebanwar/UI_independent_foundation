@@ -64,3 +64,4 @@ The Echo Bloom foundation provides first-class support for three primary targets
 ## 4. Verification & Fallback Mechanisms
 - When a platform-specific feature is unavailable (e.g., hardware DSP on Windows), the foundation transparently falls back to software-based emulation or state retention without throwing unhandled exceptions.
 - The `AudioEngine` factory dynamically selects the best implementation at runtime.
+

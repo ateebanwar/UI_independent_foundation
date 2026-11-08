@@ -164,3 +164,4 @@ class NowPlayingWidget extends ConsumerWidget {
 2. **Never import `dart:io` or `winmm.dll`**: All platform specifics are handled in `infrastructure/`.
 3. **Use `ref.watch()` for UI rebuilds**: Only watch the specific state needed for each widget to maintain 60/120 FPS performance.
 4. **The Headless Dashboard (`FoundationVerificationView`)**: Located at `lib/app/app.dart`. You can replace or wrap this view with your new UI routes in `lib/app/routing/app_router.dart`.
+

@@ -55,5 +55,38 @@ abstract class PlaybackRepository {
 
   /// Adjusts playback speed (e.g. 0.5x to 2.0x).
   Future<Result<void, Failure>> setSpeed(double speed);
+
+  /// Configures listening history playback threshold (default 5s).
+  void setHistoryQualificationThreshold(Duration threshold);
+
+  /// Current history qualification threshold.
+  Duration get historyQualificationThreshold;
+
+  /// Sets a sleep timer for [duration], or stops at end of track if [stopAfterCurrent] is true.
+  Future<Result<void, Failure>> setSleepTimer(Duration? duration, {bool stopAfterCurrent = false});
+
+  /// Cancels active sleep timer.
+  Future<Result<void, Failure>> cancelSleepTimer();
+
+  /// Stream of remaining sleep timer duration.
+  Stream<Duration?> get sleepTimerStream;
+
+  /// Current remaining duration for sleep timer, or null if inactive.
+  Duration? get currentSleepTimerRemaining;
+
+  /// Configures crossfade transition duration between tracks.
+  void setCrossfadeDuration(Duration duration);
+
+  /// Current crossfade duration.
+  Duration get crossfadeDuration;
+
+  /// Reorders track position in the active queue.
+  Future<Result<void, Failure>> reorderQueue(int oldIndex, int newIndex);
+
+  /// Removes a track from the active playback queue.
+  Future<Result<void, Failure>> removeTrackFromQueue(String trackId);
+
+  /// Clears the active playback queue.
+  Future<Result<void, Failure>> clearQueue();
 }
 

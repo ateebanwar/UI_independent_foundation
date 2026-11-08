@@ -56,6 +56,15 @@ abstract class TrackRepository {
   /// Deletes tracks by IDs.
   Future<Result<int, Failure>> deleteTracks(List<String> trackIds);
 
+  /// Retrieves local music folder paths.
+  Future<Result<List<String>, Failure>> getFolders();
+
+  /// Retrieves local tracks located inside a specific folder.
+  Future<Result<List<Track>, Failure>> getTracksInFolder(String folderPath);
+
+  /// Detects and prunes database records pointing to deleted local files.
+  Future<Result<List<String>, Failure>> cleanMissingLocalFiles();
+
   /// Observes track count changes or library updates.
   Stream<int> watchTrackCount();
 }

@@ -95,3 +95,4 @@ During test suite verification, 7 edge cases were discovered, addressed, and ver
 5. **Shared Download Reference**: Verified that deleting a downloaded playlist safely checks `isTrackReferencedElsewhere` before deleting audio data on disk.
 6. **LRC Lyrics Format**: Handled non-standard timestamp offsets and multiline HTML formatting.
 7. **AppMode Isolation**: Verified that under `AppMode.offline`, zero network requests are emitted.
+

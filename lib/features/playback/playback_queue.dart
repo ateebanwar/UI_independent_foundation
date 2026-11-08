@@ -120,6 +120,53 @@ class PlaybackQueue extends Equatable {
     return copyWith(repeatMode: mode);
   }
 
+  PlaybackQueue reorder(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= currentList.length || newIndex < 0 || newIndex >= currentList.length) {
+      return this;
+    }
+    final list = List<Track>.from(currentList);
+    final moved = list.removeAt(oldIndex);
+    list.insert(newIndex, moved);
+
+    int newCurIdx = currentIndex;
+    if (currentIndex == oldIndex) {
+      newCurIdx = newIndex;
+    } else if (oldIndex < currentIndex && newIndex >= currentIndex) {
+      newCurIdx--;
+    } else if (oldIndex > currentIndex && newIndex <= currentIndex) {
+      newCurIdx++;
+    }
+    return copyWith(
+      currentList: List.unmodifiable(list),
+      currentIndex: newCurIdx,
+    );
+  }
+
+  PlaybackQueue removeTrack(String trackId) {
+    final idx = currentList.indexWhere((t) => t.id == trackId);
+    if (idx == -1) return this;
+
+    final newCurrent = List<Track>.from(currentList)..removeAt(idx);
+    final newOriginal = List<Track>.from(originalList)..removeWhere((t) => t.id == trackId);
+
+    int newIdx = currentIndex;
+    if (idx < currentIndex) {
+      newIdx--;
+    } else if (idx == currentIndex) {
+      newIdx = newCurrent.isEmpty ? -1 : (currentIndex >= newCurrent.length ? newCurrent.length - 1 : currentIndex);
+    }
+
+    return copyWith(
+      originalList: List.unmodifiable(newOriginal),
+      currentList: List.unmodifiable(newCurrent),
+      currentIndex: newIdx,
+    );
+  }
+
+  PlaybackQueue clear() {
+    return const PlaybackQueue();
+  }
+
   PlaybackQueue copyWith({
     List<Track>? originalList,
     List<Track>? currentList,

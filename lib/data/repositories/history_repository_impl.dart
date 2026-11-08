@@ -21,12 +21,14 @@ class HistoryRepositoryImpl implements HistoryRepository {
     required Track track,
     required Duration playedDuration,
     required bool completed,
+    DateTime? playedAt,
   }) async {
     try {
       await _localDataSource.recordPlay(
         track: track,
         playedDuration: playedDuration,
         completed: completed,
+        playedAt: playedAt,
       );
       return const Result.ok(null);
     } catch (e, stack) {
@@ -54,6 +56,50 @@ class HistoryRepositoryImpl implements HistoryRepository {
     } catch (e, stack) {
       _logger?.error('Error fetching most played tracks', tag: 'HistoryRepository', error: e, stackTrace: stack);
       return Result.err(StorageFailure(message: 'Failed to get most played tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<int, Failure>> getPlayCount(String trackId) async {
+    try {
+      final count = await _localDataSource.getPlayCount(trackId);
+      return Result.ok(count);
+    } catch (e, stack) {
+      _logger?.error('Error getting play count for $trackId', tag: 'HistoryRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get play count: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<DateTime?, Failure>> getLastPlayed(String trackId) async {
+    try {
+      final date = await _localDataSource.getLastPlayed(trackId);
+      return Result.ok(date);
+    } catch (e, stack) {
+      _logger?.error('Error getting last played for $trackId', tag: 'HistoryRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get last played: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<void, Failure>> deleteHistoryItem(String historyId) async {
+    try {
+      await _localDataSource.deleteHistoryItem(historyId);
+      return const Result.ok(null);
+    } catch (e, stack) {
+      _logger?.error('Error deleting history item $historyId', tag: 'HistoryRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to delete history item: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<PlayHistoryItem>, Failure>> searchHistory(String query) async {
+    try {
+      final items = await _localDataSource.searchHistory(query);
+      return Result.ok(items);
+    } catch (e, stack) {
+      _logger?.error('Error searching history for $query', tag: 'HistoryRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to search history: $e', cause: e));
     }
   }
 

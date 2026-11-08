@@ -71,3 +71,4 @@ This enables $O(\log N)$ search lookups rather than full-table $O(N)$ sequential
 Because the foundation contains zero widget dependencies:
 1. **0 Widget Rebuilds in Domain/Data**: State emissions via Riverpod `StateNotifier` deliver fine-grained immutable state updates only to subscribers who explicitly `.watch()` the specific field.
 2. **Background Headless Capability**: Audio playback, playlist queuing, and download managers run uninhibited whether the UI is foregrounded, minimized, or entirely detached.
+

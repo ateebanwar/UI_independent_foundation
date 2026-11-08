@@ -6,6 +6,7 @@ import 'package:echo_bloom/domain/entities/app_mode.dart';
 import 'package:echo_bloom/domain/entities/artist.dart';
 import 'package:echo_bloom/domain/entities/playlist.dart';
 import 'package:echo_bloom/domain/entities/track.dart';
+import 'package:echo_bloom/domain/repositories/playback_repository.dart';
 import 'package:echo_bloom/domain/repositories/track_repository.dart';
 import 'package:echo_bloom/features/settings/settings_controller.dart';
 import 'package:equatable/equatable.dart';
@@ -206,6 +207,18 @@ class SearchController extends StateNotifier<SearchState> {
             : null,
         clearStatus: true,
       );
+    }
+  }
+
+  Future<void> playAll(List<Track> tracks, PlaybackRepository playbackRepo) async {
+    if (tracks.isEmpty) return;
+    await playbackRepo.setQueue(tracks, initialIndex: 0);
+  }
+
+  Future<void> queueAll(List<Track> tracks, PlaybackRepository playbackRepo) async {
+    if (tracks.isEmpty) return;
+    for (final track in tracks) {
+      await playbackRepo.addToQueue(track);
     }
   }
 

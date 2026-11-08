@@ -8,12 +8,16 @@ class HistoryState extends Equatable {
   final bool isLoading;
   final List<PlayHistoryItem> recentItems;
   final List<Track> mostPlayed;
+  final List<PlayHistoryItem> searchResults;
+  final String? activeSearchQuery;
   final String? errorMessage;
 
   const HistoryState({
     this.isLoading = false,
     this.recentItems = const [],
     this.mostPlayed = const [],
+    this.searchResults = const [],
+    this.activeSearchQuery,
     this.errorMessage,
   });
 
@@ -21,19 +25,31 @@ class HistoryState extends Equatable {
     bool? isLoading,
     List<PlayHistoryItem>? recentItems,
     List<Track>? mostPlayed,
+    List<PlayHistoryItem>? searchResults,
+    String? activeSearchQuery,
     String? errorMessage,
     bool clearError = false,
+    bool clearSearch = false,
   }) {
     return HistoryState(
       isLoading: isLoading ?? this.isLoading,
       recentItems: recentItems ?? this.recentItems,
       mostPlayed: mostPlayed ?? this.mostPlayed,
+      searchResults: clearSearch ? const [] : (searchResults ?? this.searchResults),
+      activeSearchQuery: clearSearch ? null : (activeSearchQuery ?? this.activeSearchQuery),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
   @override
-  List<Object?> get props => [isLoading, recentItems, mostPlayed, errorMessage];
+  List<Object?> get props => [
+        isLoading,
+        recentItems,
+        mostPlayed,
+        searchResults,
+        activeSearchQuery,
+        errorMessage,
+      ];
 }
 
 class HistoryController extends StateNotifier<HistoryState> {
@@ -52,6 +68,46 @@ class HistoryController extends StateNotifier<HistoryState> {
       mostPlayed: mostPlayedRes.valueOrNull ?? state.mostPlayed,
       errorMessage: recentRes.failureOrNull?.message,
     );
+  }
+
+  Future<void> deleteHistoryItem(String historyId) async {
+    await _historyRepository.deleteHistoryItem(historyId);
+    final updatedRecent = state.recentItems.where((item) => item.id != historyId).toList();
+    final updatedSearch = state.searchResults.where((item) => item.id != historyId).toList();
+    state = state.copyWith(
+      recentItems: updatedRecent,
+      searchResults: updatedSearch,
+    );
+  }
+
+  Future<void> searchHistory(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      state = state.copyWith(clearSearch: true);
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, activeSearchQuery: trimmed);
+    final resultsRes = await _historyRepository.searchHistory(trimmed);
+    state = state.copyWith(
+      isLoading: false,
+      searchResults: resultsRes.valueOrNull ?? const [],
+      errorMessage: resultsRes.failureOrNull?.message,
+    );
+  }
+
+  void clearSearch() {
+    state = state.copyWith(clearSearch: true);
+  }
+
+  Future<int> getPlayCount(String trackId) async {
+    final res = await _historyRepository.getPlayCount(trackId);
+    return res.valueOrNull ?? 0;
+  }
+
+  Future<DateTime?> getLastPlayed(String trackId) async {
+    final res = await _historyRepository.getLastPlayed(trackId);
+    return res.valueOrNull;
   }
 
   Future<void> clearHistory() async {

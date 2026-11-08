@@ -4,6 +4,7 @@ import 'package:echo_bloom/data/local/database/migration.dart';
 import 'package:echo_bloom/data/local/database/migrations/v1_initial_schema.dart';
 import 'package:echo_bloom/data/local/database/migrations/v2_online_tracks_schema.dart';
 import 'package:echo_bloom/data/local/database/migrations/v3_downloaded_playlists_schema.dart';
+import 'package:echo_bloom/data/local/database/migrations/v4_advanced_foundation_schema.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// Coordinates execution of versioned database migrations.
@@ -19,6 +20,7 @@ class DatabaseMigrator {
           V1InitialSchema(),
           V2OnlineTracksSchema(),
           V3DownloadedPlaylistsSchema(),
+          V4AdvancedFoundationSchema(),
         ],
         _logger = logger;
 

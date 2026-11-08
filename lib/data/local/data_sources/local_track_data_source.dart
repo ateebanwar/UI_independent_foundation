@@ -1,10 +1,12 @@
 
 import 'package:echo_bloom/core/types/pagination.dart';
+import 'dart:io';
 import 'package:echo_bloom/data/local/database/app_database.dart';
 import 'package:echo_bloom/data/mappers/track_mapper.dart';
 import 'package:echo_bloom/domain/entities/album.dart';
 import 'package:echo_bloom/domain/entities/artist.dart';
 import 'package:echo_bloom/domain/entities/track.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// Concrete local data source executing indexed SQLite queries for tracks.
@@ -211,5 +213,57 @@ class LocalTrackDataSource {
       [TrackSourceType.remoteStream.index],
     );
     return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  Future<List<String>> getFolders() async {
+    final rows = await _db.rawQuery('''
+      SELECT DISTINCT media_uri FROM tracks
+      WHERE source_type = ?
+    ''', [TrackSourceType.localFile.index]);
+
+    final folders = <String>{};
+    for (final row in rows) {
+      final uri = row['media_uri'] as String;
+      final lastSlash = uri.lastIndexOf(RegExp(r'[/\\]'));
+      if (lastSlash > 0) {
+        folders.add(uri.substring(0, lastSlash));
+      }
+    }
+    final sorted = folders.toList()..sort();
+    return sorted;
+  }
+
+  Future<List<Track>> getTracksInFolder(String folderPath) async {
+    final pattern = '$folderPath%';
+    final rows = await _db.query(
+      'tracks',
+      where: 'media_uri LIKE ? AND source_type = ?',
+      whereArgs: [pattern, TrackSourceType.localFile.index],
+      orderBy: 'title COLLATE NOCASE ASC',
+    );
+    return rows.map(TrackMapper.fromDbMap).toList();
+  }
+
+  Future<List<String>> cleanMissingLocalFiles() async {
+    final rows = await _db.query(
+      'tracks',
+      where: 'source_type = ?',
+      whereArgs: [TrackSourceType.localFile.index],
+    );
+    final missingIds = <String>[];
+    for (final r in rows) {
+      final uri = r['media_uri'] as String;
+      if (!kIsWeb && (uri.startsWith('/') || uri.contains(r':\'))) {
+        try {
+          if (!File(uri).existsSync()) {
+            missingIds.add(r['id'] as String);
+          }
+        } catch (_) {}
+      }
+    }
+    if (missingIds.isNotEmpty) {
+      await deleteTracks(missingIds);
+    }
+    return missingIds;
   }
 }

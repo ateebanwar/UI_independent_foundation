@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:echo_bloom/app/bootstrap/dependency_bootstrap.dart';
 import 'package:echo_bloom/core/logging/app_logger.dart';
 import 'package:echo_bloom/data/local/data_sources/downloaded_playlist_data_source.dart';
+import 'package:echo_bloom/domain/entities/album.dart';
+import 'package:echo_bloom/domain/entities/artist.dart';
 import 'package:echo_bloom/domain/entities/downloaded_playlist.dart';
 import 'package:echo_bloom/domain/entities/playlist.dart';
 import 'package:echo_bloom/domain/entities/track.dart';
@@ -429,6 +431,51 @@ class DownloadController extends StateNotifier<DownloadState> {
     } catch (e, stack) {
       _logger?.error('Failed to delete downloaded playlist: $playlistId', tag: 'DownloadController', error: e, stackTrace: stack);
     }
+  }
+
+  int get totalStorageBytes => state.downloadedTracks.fold(0, (acc, t) => acc + t.fileSize);
+
+  String get formattedStorageUsage {
+    final bytes = totalStorageBytes;
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+
+  final Set<String> _pausedTrackIds = {};
+  bool isPaused(String trackId) => _pausedTrackIds.contains(trackId);
+
+  void pauseTrackDownload(String trackId) {
+    _pausedTrackIds.add(trackId);
+  }
+
+  void resumeTrackDownload(String trackId) {
+    _pausedTrackIds.remove(trackId);
+  }
+
+  Future<bool> downloadAlbum(Album album, List<Track> tracks) {
+    final playlist = Playlist(
+      id: 'album_${album.id}',
+      name: album.title,
+      description: 'Album by ${album.artist}',
+      artworkUri: album.artworkUri,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    return downloadPlaylist(playlist, tracks);
+  }
+
+  Future<bool> downloadArtistCollection(Artist artist, List<Track> tracks) {
+    final playlist = Playlist(
+      id: 'artist_${artist.id}',
+      name: '${artist.name} Collection',
+      description: 'Songs by ${artist.name}',
+      artworkUri: artist.artworkUri,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    return downloadPlaylist(playlist, tracks);
   }
 
   @override

@@ -26,6 +26,25 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
   PlaybackQueue _queue = const PlaybackQueue();
   bool _isInitiatingPlayback = false;
 
+  // History qualification state
+  Duration _qualificationThreshold = const Duration(seconds: 5);
+  Track? _activeSessionTrack;
+  bool _sessionHasQualified = false;
+  int _accumulatedActivePlayMs = 0;
+  DateTime? _lastPlayTimestamp;
+  Duration _lastObservedPosition = Duration.zero;
+
+  // Sleep timer state
+  Timer? _sleepTimer;
+  Timer? _sleepTicker;
+  DateTime? _sleepTimerEndTime;
+  bool _sleepAfterCurrentSong = false;
+  final StreamController<Duration?> _sleepTimerController =
+      StreamController<Duration?>.broadcast();
+
+  // Crossfade state
+  Duration _crossfadeDuration = Duration.zero;
+
   StreamSubscription<AudioEngineEvent>? _eventSub;
   StreamSubscription<PlaybackStatus>? _statusSub;
   StreamSubscription<Duration>? _posSub;
@@ -92,11 +111,17 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
       if (_isInitiatingPlayback && status == PlaybackStatus.paused) {
         return;
       }
+      if (status != PlaybackStatus.playing) {
+        _lastPlayTimestamp = null;
+      } else {
+        _lastPlayTimestamp ??= DateTime.now();
+      }
       _currentState = _currentState.copyWith(status: status);
       _emitState();
     });
 
     _posSub = _audioEngine.positionStream.listen((position) {
+      _updateListeningProgress(position);
       final prevSec = _currentState.position.inSeconds;
       _currentState = _currentState.copyWith(position: position);
       if (position.inSeconds != prevSec) {
@@ -110,14 +135,72 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
     });
   }
 
+  void _updateListeningProgress(Duration position) {
+    if (_activeSessionTrack == null) return;
+
+    if (_currentState.status == PlaybackStatus.playing) {
+      final now = DateTime.now();
+      if (_lastPlayTimestamp != null) {
+        final elapsedWallMs = now.difference(_lastPlayTimestamp!).inMilliseconds;
+        final deltaPosMs = (position.inMilliseconds - _lastObservedPosition.inMilliseconds).abs();
+        if (elapsedWallMs > 0 && elapsedWallMs < 2000 && deltaPosMs <= 2500) {
+          _accumulatedActivePlayMs += elapsedWallMs;
+        }
+      }
+      _lastPlayTimestamp = now;
+      _lastObservedPosition = position;
+
+      final trackDur = _activeSessionTrack!.duration;
+      final effectiveThreshold = (trackDur > Duration.zero && trackDur < _qualificationThreshold)
+          ? Duration(milliseconds: (trackDur.inMilliseconds * 0.8).round())
+          : _qualificationThreshold;
+
+      if (!_sessionHasQualified && _accumulatedActivePlayMs >= effectiveThreshold.inMilliseconds) {
+        _sessionHasQualified = true;
+        _logger?.info(
+          'Track ${_activeSessionTrack!.title} reached qualification threshold (${_accumulatedActivePlayMs}ms)',
+          tag: 'PlaybackRepository',
+        );
+        if (_historyRepository != null) {
+          unawaited(_historyRepository.recordPlay(
+            track: _activeSessionTrack!,
+            playedDuration: Duration(milliseconds: _accumulatedActivePlayMs),
+            completed: false,
+          ));
+        }
+      }
+    } else {
+      _lastPlayTimestamp = null;
+      _lastObservedPosition = position;
+    }
+  }
+
   Future<void> _handleTrackEnded() async {
     final finishedTrack = _currentState.currentTrack;
     if (finishedTrack != null && _historyRepository != null) {
-      unawaited(_historyRepository.recordPlay(
-        track: finishedTrack,
-        playedDuration: finishedTrack.duration,
-        completed: true,
-      ));
+      final playedDur = _sessionHasQualified
+          ? finishedTrack.duration
+          : Duration(milliseconds: _accumulatedActivePlayMs);
+      if (_sessionHasQualified || playedDur.inMilliseconds >= 2000) {
+        unawaited(_historyRepository.recordPlay(
+          track: finishedTrack,
+          playedDuration: finishedTrack.duration,
+          completed: true,
+        ));
+      }
+    }
+
+    _activeSessionTrack = null;
+    _sessionHasQualified = false;
+    _accumulatedActivePlayMs = 0;
+    _lastPlayTimestamp = null;
+    _lastObservedPosition = Duration.zero;
+
+    if (_sleepAfterCurrentSong) {
+      _sleepAfterCurrentSong = false;
+      await stop();
+      await cancelSleepTimer();
+      return;
     }
 
     if (_currentState.repeatMode == RepeatMode.one && finishedTrack != null) {
@@ -234,13 +317,12 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
         _isInitiatingPlayback = false;
       }
 
-      if (_historyRepository != null) {
-        unawaited(_historyRepository.recordPlay(
-          track: track,
-          playedDuration: Duration.zero,
-          completed: false,
-        ));
-      }
+      // Initialize active listening session for YouTube-style history qualification
+      _activeSessionTrack = trackToPlay;
+      _sessionHasQualified = false;
+      _accumulatedActivePlayMs = 0;
+      _lastPlayTimestamp = DateTime.now();
+      _lastObservedPosition = Duration.zero;
 
       return const Result.ok(null);
     } catch (e, stack) {
@@ -360,6 +442,8 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
   @override
   Future<Result<void, Failure>> seek(Duration position) async {
     try {
+      _lastObservedPosition = position;
+      _lastPlayTimestamp = DateTime.now();
       await _audioEngine.seek(position);
       _currentState = _currentState.copyWith(position: position);
       _emitState();
@@ -454,7 +538,107 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
     }
   }
 
+  @override
+  void setHistoryQualificationThreshold(Duration threshold) {
+    _qualificationThreshold = threshold;
+  }
+
+  @override
+  Duration get historyQualificationThreshold => _qualificationThreshold;
+
+  @override
+  Future<Result<void, Failure>> setSleepTimer(Duration? duration, {bool stopAfterCurrent = false}) async {
+    _sleepTimer?.cancel();
+    _sleepTicker?.cancel();
+
+    if (stopAfterCurrent) {
+      _sleepAfterCurrentSong = true;
+      _sleepTimerEndTime = null;
+      _sleepTimerController.add(null);
+      return const Result.ok(null);
+    }
+
+    _sleepAfterCurrentSong = false;
+    if (duration == null || duration <= Duration.zero) {
+      _sleepTimerEndTime = null;
+      _sleepTimerController.add(null);
+      return const Result.ok(null);
+    }
+
+    _sleepTimerEndTime = DateTime.now().add(duration);
+    _sleepTimerController.add(duration);
+
+    _sleepTicker = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final remaining = currentSleepTimerRemaining;
+      if (remaining == null || remaining <= Duration.zero) {
+        timer.cancel();
+        _sleepTimerController.add(null);
+      } else {
+        _sleepTimerController.add(remaining);
+      }
+    });
+
+    _sleepTimer = Timer(duration, () async {
+      _sleepTicker?.cancel();
+      _sleepTimerEndTime = null;
+      _sleepTimerController.add(null);
+      await pause();
+    });
+
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<void, Failure>> cancelSleepTimer() async {
+    _sleepTimer?.cancel();
+    _sleepTicker?.cancel();
+    _sleepTimerEndTime = null;
+    _sleepAfterCurrentSong = false;
+    _sleepTimerController.add(null);
+    return const Result.ok(null);
+  }
+
+  @override
+  Stream<Duration?> get sleepTimerStream => _sleepTimerController.stream;
+
+  @override
+  Duration? get currentSleepTimerRemaining {
+    if (_sleepTimerEndTime == null) return null;
+    final diff = _sleepTimerEndTime!.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  @override
+  void setCrossfadeDuration(Duration duration) {
+    _crossfadeDuration = duration;
+  }
+
+  @override
+  Duration get crossfadeDuration => _crossfadeDuration;
+
+  @override
+  Future<Result<void, Failure>> reorderQueue(int oldIndex, int newIndex) async {
+    _queue = _queue.reorder(oldIndex, newIndex);
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<void, Failure>> removeTrackFromQueue(String trackId) async {
+    _queue = _queue.removeTrack(trackId);
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<void, Failure>> clearQueue() async {
+    _queue = _queue.clear();
+    await stop();
+    return const Result.ok(null);
+  }
+
   void dispose() {
+    _sleepTimer?.cancel();
+    _sleepTicker?.cancel();
+    _sleepTimerController.close();
     _eventSub?.cancel();
     _statusSub?.cancel();
     _posSub?.cancel();
