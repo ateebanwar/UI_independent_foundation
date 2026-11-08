@@ -1,0 +1,298 @@
+import 'dart:async';
+import 'package:echo_bloom/core/errors/failures.dart';
+import 'package:echo_bloom/core/logging/app_logger.dart';
+import 'package:echo_bloom/core/result/result.dart';
+import 'package:echo_bloom/core/types/pagination.dart';
+import 'package:echo_bloom/data/local/data_sources/local_track_data_source.dart';
+import 'package:echo_bloom/data/remote/contracts/remote_music_data_source.dart';
+import 'package:echo_bloom/domain/entities/album.dart';
+import 'package:echo_bloom/domain/entities/artist.dart';
+import 'package:echo_bloom/domain/entities/playlist.dart';
+import 'package:echo_bloom/domain/entities/track.dart';
+import 'package:echo_bloom/domain/repositories/track_repository.dart';
+
+/// Concrete implementation of [TrackRepository].
+/// Coordinates local SQLite data source and remote music catalog.
+class TrackRepositoryImpl implements TrackRepository {
+  final LocalTrackDataSource _localDataSource;
+  final RemoteMusicDataSource? _remoteDataSource;
+  final AppLogger? _logger;
+  final StreamController<int> _trackCountController = StreamController<int>.broadcast();
+
+  TrackRepositoryImpl({
+    required LocalTrackDataSource localDataSource,
+    RemoteMusicDataSource? remoteDataSource,
+    AppLogger? logger,
+  })  : _localDataSource = localDataSource,
+        _remoteDataSource = remoteDataSource,
+        _logger = logger;
+
+  @override
+  Future<Result<PaginatedList<Track>, Failure>> getTracks(PageQuery query) async {
+    try {
+      final result = await _localDataSource.getTracks(query);
+      return Result.ok(result);
+    } catch (e, stack) {
+      _logger?.error('Error fetching tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to query tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<Track, Failure>> getTrackById(String id) async {
+    try {
+      final track = await _localDataSource.getTrackById(id);
+      if (track != null) {
+        return Result.ok(track);
+      }
+
+      if (_remoteDataSource != null) {
+        final remoteTrack = await _remoteDataSource.fetchTrackById(id);
+        if (remoteTrack != null) {
+          return Result.ok(remoteTrack);
+        }
+      }
+
+      return Result.err(MediaNotFoundFailure(message: 'Track with ID $id was not found', pathOrUri: id));
+    } catch (e, stack) {
+      _logger?.error('Error fetching track by ID', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get track: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Track>, Failure>> searchTracks(String query) async {
+    try {
+      final tracks = await _localDataSource.searchTracks(query);
+      return Result.ok(tracks);
+    } catch (e, stack) {
+      _logger?.error('Error searching tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to search tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Track>, Failure>> searchRemoteTracks(String query) async {
+    if (_remoteDataSource == null) {
+      return const Result.ok([]);
+    }
+    try {
+      final tracks = await _remoteDataSource.searchRemoteCatalog(query);
+      return Result.ok(tracks);
+    } catch (e, stack) {
+      _logger?.error('Error searching remote tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(NetworkFailure(message: 'Failed to search online music: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<String> resolveStreamUri(String trackIdOrUri, [Track? track]) async {
+    if (_remoteDataSource == null) {
+      return trackIdOrUri;
+    }
+    try {
+      final resolved = await _remoteDataSource.resolveStreamUri(trackIdOrUri, track);
+      return resolved.isNotEmpty ? resolved : trackIdOrUri;
+    } catch (e, stack) {
+      _logger?.error('Error resolving stream URI', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return trackIdOrUri;
+    }
+  }
+
+  @override
+  Future<Result<List<Artist>, Failure>> getArtists([String? query]) async {
+    try {
+      final localArtists = await _localDataSource.getArtists();
+      if (query != null && query.trim().isNotEmpty && _remoteDataSource != null) {
+        final remoteArtists = await _remoteDataSource.fetchArtists(query);
+        final combined = [...localArtists];
+        final names = combined.map((a) => a.name.toLowerCase()).toSet();
+        for (final r in remoteArtists) {
+          if (!names.contains(r.name.toLowerCase())) {
+            combined.add(r);
+          }
+        }
+        return Result.ok(combined);
+      }
+      return Result.ok(localArtists);
+    } catch (e, stack) {
+      _logger?.error('Error fetching artists', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get artists: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Album>, Failure>> getAlbums([String? query]) async {
+    try {
+      final localAlbums = await _localDataSource.getAlbums();
+      if (query != null && query.trim().isNotEmpty && _remoteDataSource != null) {
+        final remoteAlbums = await _remoteDataSource.fetchAlbums(query);
+        final combined = [...localAlbums];
+        final titles = combined.map((a) => a.title.toLowerCase()).toSet();
+        for (final r in remoteAlbums) {
+          if (!titles.contains(r.title.toLowerCase())) {
+            combined.add(r);
+          }
+        }
+        return Result.ok(combined);
+      }
+      return Result.ok(localAlbums);
+    } catch (e, stack) {
+      _logger?.error('Error fetching albums', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get albums: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Track>, Failure>> getTracksByArtist(String artistName) async {
+    try {
+      final localTracks = await _localDataSource.getTracksByArtist(artistName);
+      if (localTracks.isNotEmpty) {
+        return Result.ok(localTracks);
+      }
+
+      if (_remoteDataSource != null) {
+        final remoteTracks = await _remoteDataSource.searchRemoteCatalog(artistName);
+        if (remoteTracks.isNotEmpty) {
+          return Result.ok(remoteTracks);
+        }
+      }
+
+      return Result.ok(localTracks);
+    } catch (e, stack) {
+      _logger?.error('Error fetching tracks by artist', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get artist tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Track>, Failure>> getTracksByAlbum(String albumName) async {
+    try {
+      if (albumName.startsWith('http://') || albumName.startsWith('https://')) {
+        if (_remoteDataSource != null) {
+          final tracks = await _remoteDataSource.fetchAlbumTracks(albumName);
+          return Result.ok(tracks);
+        }
+      }
+
+      final localTracks = await _localDataSource.getTracksByAlbum(albumName);
+      if (localTracks.isNotEmpty) {
+        return Result.ok(localTracks);
+      }
+
+      if (_remoteDataSource != null) {
+        final remoteTracks = await _remoteDataSource.fetchAlbumTracks(albumName);
+        return Result.ok(remoteTracks);
+      }
+
+      return Result.ok(localTracks);
+    } catch (e, stack) {
+      _logger?.error('Error fetching tracks by album', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get album tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Playlist>, Failure>> getDiscoveryPlaylists() async {
+    if (_remoteDataSource == null) {
+      return const Result.ok([]);
+    }
+    try {
+      final playlists = await _remoteDataSource.fetchDiscoveryPlaylists();
+      return Result.ok(playlists);
+    } catch (e, stack) {
+      _logger?.error('Error fetching discovery playlists', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(NetworkFailure(message: 'Failed to fetch discovery playlists: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Track>, Failure>> getDiscoveryPlaylistTracks(String playlistIdOrQuery) async {
+    if (_remoteDataSource == null) {
+      return const Result.ok([]);
+    }
+    try {
+      final tracks = await _remoteDataSource.fetchPlaylistTracks(playlistIdOrQuery);
+      return Result.ok(tracks);
+    } catch (e, stack) {
+      _logger?.error('Error fetching discovery playlist tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(NetworkFailure(message: 'Failed to load playlist tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Track>, Failure>> getFavoriteTracks() async {
+    try {
+      final tracks = await _localDataSource.getFavoriteTracks();
+      return Result.ok(tracks);
+    } catch (e, stack) {
+      _logger?.error('Error fetching favorite tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get favorite tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<List<Track>, Failure>> getDownloadedTracks() async {
+    try {
+      final tracks = await _localDataSource.getDownloadedTracks();
+      return Result.ok(tracks);
+    } catch (e, stack) {
+      _logger?.error('Error fetching downloaded tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to get downloaded tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<bool, Failure>> toggleFavorite(String trackId, [Track? track]) async {
+    try {
+      final status = await _localDataSource.toggleFavorite(trackId, track);
+      return Result.ok(status);
+    } catch (e, stack) {
+      _logger?.error('Error toggling favorite', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to toggle favorite: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<int, Failure>> upsertTracks(List<Track> tracks) async {
+    try {
+      final count = await _localDataSource.upsertTracks(tracks);
+      _notifyTrackCountChanged();
+      return Result.ok(count);
+    } catch (e, stack) {
+      _logger?.error('Error upserting tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to upsert tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Future<Result<int, Failure>> deleteTracks(List<String> trackIds) async {
+    try {
+      final count = await _localDataSource.deleteTracks(trackIds);
+      _notifyTrackCountChanged();
+      return Result.ok(count);
+    } catch (e, stack) {
+      _logger?.error('Error deleting tracks', tag: 'TrackRepository', error: e, stackTrace: stack);
+      return Result.err(StorageFailure(message: 'Failed to delete tracks: $e', cause: e));
+    }
+  }
+
+  @override
+  Stream<int> watchTrackCount() {
+    _notifyTrackCountChanged();
+    return _trackCountController.stream;
+  }
+
+  void _notifyTrackCountChanged() async {
+    try {
+      final count = await _localDataSource.getTrackCount();
+      if (!_trackCountController.isClosed) {
+        _trackCountController.add(count);
+      }
+    } catch (_) {}
+  }
+
+  void dispose() {
+    _trackCountController.close();
+  }
+}
