@@ -48,3 +48,4 @@ flowchart TD
 | **iOS** | `AVPlayer` / `AVAudioEngine` | Full support via `AVAudioUnitEQ` nodes | Full `AVAudioSessionCategoryPlayback` background mode |
 | **Web** | HTML5 `<audio>` / Web Audio API | Full support via `BiquadFilterNode` cascade | Subject to browser tab throttling / audio autoplay policy |
 | **Desktop (Win/macOS/Linux)** | Miniaudio / FFI / SoLoud | Full support via software DSP filter chains | Unrestricted background playback |
+

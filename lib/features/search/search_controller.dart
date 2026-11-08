@@ -31,6 +31,9 @@ class SearchState extends Equatable {
   final List<Playlist> playlistResults;
   final String? errorMessage;
   final String? statusMessage;
+  final int page;
+  final bool hasMore;
+  final bool isLoadingMore;
 
   const SearchState({
     this.query = '',
@@ -43,6 +46,9 @@ class SearchState extends Equatable {
     this.playlistResults = const [],
     this.errorMessage,
     this.statusMessage,
+    this.page = 1,
+    this.hasMore = false,
+    this.isLoadingMore = false,
   });
 
   SearchState copyWith({
@@ -56,6 +62,9 @@ class SearchState extends Equatable {
     List<Playlist>? playlistResults,
     String? errorMessage,
     String? statusMessage,
+    int? page,
+    bool? hasMore,
+    bool? isLoadingMore,
     bool clearError = false,
     bool clearStatus = false,
   }) {
@@ -70,6 +79,9 @@ class SearchState extends Equatable {
       playlistResults: playlistResults ?? this.playlistResults,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       statusMessage: clearStatus ? null : (statusMessage ?? this.statusMessage),
+      page: page ?? this.page,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     );
   }
 
@@ -85,6 +97,9 @@ class SearchState extends Equatable {
         playlistResults,
         errorMessage,
         statusMessage,
+        page,
+        hasMore,
+        isLoadingMore,
       ];
 }
 
@@ -125,6 +140,9 @@ class SearchController extends StateNotifier<SearchState> {
         albumResults: const [],
         playlistResults: const [],
         isSearching: false,
+        page: 1,
+        hasMore: false,
+        isLoadingMore: false,
         clearError: true,
         clearStatus: true,
       );
@@ -167,6 +185,9 @@ class SearchController extends StateNotifier<SearchState> {
         artistResults: artists,
         albumResults: albums,
         playlistResults: const [],
+        page: 1,
+        hasMore: tracks.length >= 20,
+        isLoadingMore: false,
         errorMessage: localRes.failureOrNull?.message,
         clearStatus: true,
       );
@@ -202,11 +223,56 @@ class SearchController extends StateNotifier<SearchState> {
         artistResults: artists,
         albumResults: albums,
         playlistResults: matchedPlaylists,
+        page: 1,
+        hasMore: tracks.length >= 10,
+        isLoadingMore: false,
         errorMessage: failure != null && tracks.isEmpty
             ? 'Unable to search online music right now. Please check your network connection.'
             : null,
         clearStatus: true,
       );
+    }
+  }
+
+  /// Loads the next page of search results for paginated exploration.
+  Future<void> loadNextPage() async {
+    if (state.isLoadingMore || !state.hasMore || state.isSearching || state.query.isEmpty) {
+      return;
+    }
+
+    state = state.copyWith(isLoadingMore: true);
+    final nextPage = state.page + 1;
+
+    try {
+      if (_appMode == AppMode.offline) {
+        final res = await _trackRepository.searchTracks(state.query);
+        final allTracks = res.valueOrNull ?? [];
+        final offset = state.localResults.length;
+        final nextSlice = allTracks.skip(offset).take(20).toList();
+        if (nextSlice.isEmpty) {
+          state = state.copyWith(isLoadingMore: false, hasMore: false);
+        } else {
+          state = state.copyWith(
+            isLoadingMore: false,
+            page: nextPage,
+            hasMore: allTracks.length > (offset + nextSlice.length),
+            localResults: [...state.localResults, ...nextSlice],
+          );
+        }
+      } else {
+        final res = await _trackRepository.searchRemoteTracks(state.query);
+        final tracks = res.valueOrNull ?? [];
+        final existingIds = state.remoteResults.map((t) => t.id).toSet();
+        final newTracks = tracks.where((t) => !existingIds.contains(t.id)).toList();
+        state = state.copyWith(
+          isLoadingMore: false,
+          page: nextPage,
+          hasMore: false,
+          remoteResults: [...state.remoteResults, ...newTracks],
+        );
+      }
+    } catch (_) {
+      state = state.copyWith(isLoadingMore: false);
     }
   }
 

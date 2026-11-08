@@ -467,9 +467,54 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
     _queue = _queue.next();
     final nextTrack = _queue.currentTrack;
     if (nextTrack != null) {
-      return await playTrack(nextTrack);
+      if (_crossfadeDuration > Duration.zero) {
+        await _performCrossfadeTransition(() async {
+          await playTrack(nextTrack);
+        });
+        return const Result.ok(null);
+      } else {
+        return await playTrack(nextTrack);
+      }
     }
     return const Result.ok(null);
+  }
+
+  Future<void> _performCrossfadeTransition(Future<void> Function() switchTrack) async {
+    if (_crossfadeDuration <= Duration.zero) {
+      await switchTrack();
+      return;
+    }
+
+    final originalVolume = _currentState.volume;
+    final halfMs = (_crossfadeDuration.inMilliseconds / 2).round().clamp(50, 2000);
+    const steps = 5;
+    final stepInterval = Duration(milliseconds: (halfMs / steps).round());
+
+    // Fade out
+    for (int i = 1; i <= steps; i++) {
+      final stepVol = (originalVolume * (1.0 - (i / steps))).clamp(0.0, 1.0);
+      try {
+        await _audioEngine.setVolume(stepVol);
+      } catch (_) {}
+      await Future<void>.delayed(stepInterval);
+    }
+
+    // Switch track
+    await switchTrack();
+
+    // Fade in
+    for (int i = 1; i <= steps; i++) {
+      final stepVol = (originalVolume * (i / steps)).clamp(0.0, 1.0);
+      try {
+        await _audioEngine.setVolume(stepVol);
+      } catch (_) {}
+      await Future<void>.delayed(stepInterval);
+    }
+
+    // Restore volume target
+    try {
+      await _audioEngine.setVolume(originalVolume);
+    } catch (_) {}
   }
 
   @override

@@ -72,3 +72,4 @@ class SyncRelease extends Equatable {
         tracks,
       ];
 }
+

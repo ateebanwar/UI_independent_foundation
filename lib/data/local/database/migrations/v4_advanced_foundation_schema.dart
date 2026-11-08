@@ -105,3 +105,4 @@ class V4AdvancedFoundationSchema implements Migration {
     await db.execute('DROP TABLE IF EXISTS listening_sessions;');
   }
 }
+

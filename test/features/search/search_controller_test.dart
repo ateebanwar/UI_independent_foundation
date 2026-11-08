@@ -91,6 +91,33 @@ void main() {
       expect(controller.state.remoteResults.first.title, 'Remote Song');
       expect(controller.state.localResults, isEmpty);
     });
+
+    test('loadNextPage appends subsequent results and increments page count', () async {
+      final manyTracks = List.generate(
+        25,
+        (i) => Track(
+          id: 'track_$i',
+          title: 'Track #$i',
+          artist: 'Artist',
+          duration: const Duration(seconds: 180),
+          mediaUri: '/storage/music/track_$i.mp3',
+          sourceType: TrackSourceType.localFile,
+          dateAdded: DateTime.now(),
+        ),
+      );
+
+      when(() => mockRepo.searchTracks('Track')).thenAnswer((_) async => Result.ok(manyTracks));
+
+      controller = SearchController(mockRepo, AppMode.offline);
+      await controller.search('Track', immediate: true);
+
+      expect(controller.state.page, 1);
+      expect(controller.state.hasMore, true);
+      expect(controller.state.localResults.length, 25);
+
+      await controller.loadNextPage();
+      expect(controller.state.isLoadingMore, false);
+    });
   });
 }
 

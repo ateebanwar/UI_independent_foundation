@@ -49,3 +49,4 @@ print('Albums found: ${results.albums.length}');
 final playbackRepo = container.read(playbackRepositoryProvider);
 await searchCtrl.playAll(results.songs, playbackRepo);
 ```
+

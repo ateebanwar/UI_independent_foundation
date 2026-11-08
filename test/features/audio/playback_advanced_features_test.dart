@@ -68,8 +68,12 @@ class StubAudioEngine implements AudioEngine {
     _posController.add(_position);
   }
 
+  final List<double> volumeHistory = [];
+
   @override
-  Future<void> setVolume(double volume) async {}
+  Future<void> setVolume(double volume) async {
+    volumeHistory.add(volume);
+  }
   @override
   Future<void> setSpeed(double speed) async {}
 
@@ -159,6 +163,18 @@ void main() {
 
       playbackRepo.setCrossfadeDuration(const Duration(seconds: 4));
       expect(playbackRepo.crossfadeDuration, equals(const Duration(seconds: 4)));
+    });
+
+    test('Crossfade transition executes volume ramp down and up on skipToNext', () async {
+      playbackRepo.setCrossfadeDuration(const Duration(milliseconds: 100));
+      await playbackRepo.setQueue([track1, track2], initialIndex: 0);
+
+      stubEngine.volumeHistory.clear();
+      await playbackRepo.skipToNext();
+
+      expect(stubEngine.volumeHistory, isNotEmpty);
+      expect(stubEngine.volumeHistory.last, equals(1.0));
+      expect(playbackRepo.currentQueue.currentIndex, equals(1));
     });
 
     test('Sleep timer sets remaining countdown and emits via sleepTimerStream', () async {

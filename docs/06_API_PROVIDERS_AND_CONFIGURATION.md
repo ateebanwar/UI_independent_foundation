@@ -61,3 +61,4 @@ final customGaanaClient = GaanaClient(
 ### 3.1 Rate Limit Management
 - Responses bearing HTTP 429 automatically respect the `Retry-After` header.
 - The `ResilientHttpClient` will retry up to 3 times using jittered exponential backoff before failing safely with a typed `NetworkFailure`.
+

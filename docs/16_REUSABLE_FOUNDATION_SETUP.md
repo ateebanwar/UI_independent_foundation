@@ -63,3 +63,4 @@ To verify all subsystems headless without launching a GUI:
 flutter test
 ```
 All 96 automated tests will run and pass within $< 30$ seconds.
+

@@ -15,3 +15,4 @@ abstract class SyncReleasesRepository {
   /// Retrieves all tracks associated with a specific release.
   Future<Result<List<Track>, Failure>> getReleaseTracks(String releaseId);
 }
+

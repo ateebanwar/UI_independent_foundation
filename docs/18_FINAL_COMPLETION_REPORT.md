@@ -207,3 +207,4 @@ $$\text{delay} = 2^{\text{attempt}} \times 500\text{ ms} + \text{jitter}(0 \dots
 1. **Third-party APIs:** Public JioSaavn and Gaana API instances are hosted on free Vercel deployments; high traffic can cause cold-start latency (1-2s). Developers can configure private proxy URLs via `JioSaavnClient(baseUrl: ...)`.
 2. **Platform Permissions:** Android requires user-granted `READ_MEDIA_AUDIO` / `READ_EXTERNAL_STORAGE` permissions to scan local files.
 3. **Web Audio Limitations:** Browsers require an initial user interaction (click/touch) before audio autoplay is permitted.
+

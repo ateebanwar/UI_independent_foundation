@@ -29,3 +29,4 @@ final releasesControllerProvider = StateNotifierProvider<ReleasesController, Rel
 final syncReleasesListProvider = Provider<List<SyncRelease>>((ref) {
   return ref.watch(releasesControllerProvider).releases;
 });
+

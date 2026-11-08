@@ -31,3 +31,4 @@ The online music catalog and stream extraction rely on public API endpoints:
 ## 3. Storage & Database Integrity
 - The SQLite database handles concurrent reads, but writes are synchronized sequentially. Batch operations should always use `db.transaction(...)`.
 - `DatabaseBackupService` should be scheduled periodically to ensure user playlist recovery in case of catastrophic device hardware failure.
+

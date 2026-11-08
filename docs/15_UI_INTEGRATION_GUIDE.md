@@ -148,3 +148,4 @@ class SearchScreen extends ConsumerWidget {
   }
 }
 ```
+

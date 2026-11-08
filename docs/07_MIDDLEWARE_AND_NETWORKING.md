@@ -53,3 +53,4 @@ result.when(
   err: (failure) => print('Handled failure: ${failure.message}'),
 );
 ```
+

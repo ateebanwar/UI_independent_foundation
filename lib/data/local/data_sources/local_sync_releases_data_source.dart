@@ -93,3 +93,4 @@ class LocalSyncReleasesDataSource {
     return rows.map(TrackMapper.fromDbMap).toList();
   }
 }
+

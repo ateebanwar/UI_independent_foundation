@@ -147,3 +147,4 @@ CREATE TABLE IF NOT EXISTS download_tasks (
 2. **Atomic Export**: Extracts user libraries, custom playlists, sessions, and settings to a structured JSON document.
 3. **Atomic Restore**: Restores user data within an SQLite transaction (`ConflictAlgorithm.replace`), rolling back completely if malformed.
 4. **Corrupt DB Recovery**: Detects corrupted SQLite files and cleanly backs up corrupt data before re-initializing from schema V1-V4.
+

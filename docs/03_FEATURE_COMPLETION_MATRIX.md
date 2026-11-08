@@ -18,3 +18,4 @@
 | **Favorites Management** | SQLite favorite flag | SQLite favorite flag | Riverpod reactive favorite toggling, local database persistence, collection query | **Fully Functional** | `FavoritesController`, `TrackRepositoryImpl.getFavoriteTracks` |
 | **User Profile & Modes** | UI-bound settings | Domain entity & repository | Age derivation from DOB, offline/online strict network isolation, preference persistence | **Fully Functional** | `UserProfile`, `AppMode`, `test/features/user_profile_test.dart` (3 tests pass) |
 | **Public API Facade** | Nonexistent | Nonexistent | Unified headless export entry point `echo_bloom_foundation.dart` and 12-step driver `foundation_example.dart` | **Fully Functional** | `lib/echo_bloom_foundation.dart`, `lib/foundation_example.dart`, zero analyze warnings |
+

@@ -46,3 +46,4 @@ Verified in `test/features/download_test.dart` (6/6 tests passing):
 - `Stale downloads pointing to deleted files are cleaned up gracefully`
 - `Downloading an entire playlist creates a playlist collection and tracks progress`
 - `Removing a downloaded playlist does not delete audio file if track is referenced elsewhere`
+

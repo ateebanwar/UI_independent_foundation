@@ -44,3 +44,4 @@ The equalizer operates on **5 standard center frequency bands**:
 - **Android:** Hardware audio effect pipelines are supported via `android.media.audiofx.Equalizer` when attached to the active `audioSessionId`. On low-end chipsets, changes may exhibit slight buffer latency (50-100 ms).
 - **Web:** Utilizes Web Audio API `BiquadFilterNode` chained between `AudioElementAudioSourceNode` and `AudioDestinationNode`. Works across Chrome, Firefox, and Safari.
 - **Desktop (Windows/macOS/Linux):** Equalizer requires software DSP filtering via miniaudio or FFI audio libraries.
+
