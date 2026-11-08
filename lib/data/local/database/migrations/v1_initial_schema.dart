@@ -105,3 +105,4 @@ class V1InitialSchema implements Migration {
     await db.execute('DROP TABLE IF EXISTS tracks;');
   }
 }
+

@@ -53,3 +53,4 @@
 | **Download Subsystem** | `lib/features/download/*` & `downloads/*` | `lib/features/downloads/*` | Reconstruction | Repositories, Storage | Planned | Pending | Consolidate duplicate controllers |
 | **Lyrics Subsystem** | `lib/features/lyrics/*` | `lib/features/lyrics/*` | Reconstruction | JioSaavnClient, Entities | Planned | Pending | Replace stub with real lyrics provider |
 | **Presentation Screens** | `lib/presentation/screens/*` | *Excluded from Core* | Exclusion | Flutter Widgets | Excluded | N/A | UI deliberately excluded per directive |
+

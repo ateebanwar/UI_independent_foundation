@@ -39,3 +39,4 @@ class Album extends Equatable {
   @override
   List<Object?> get props => [id, title, artist, year, trackCount, artworkUri];
 }
+

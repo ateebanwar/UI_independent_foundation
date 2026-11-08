@@ -9,3 +9,4 @@ abstract class UserProfileRepository {
   Future<Result<bool, Failure>> isSetupCompleted();
   Future<Result<void, Failure>> setSetupCompleted(bool completed);
 }
+

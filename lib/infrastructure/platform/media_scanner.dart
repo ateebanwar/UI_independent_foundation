@@ -338,3 +338,4 @@ class DefaultMediaScanner implements MediaScanner {
     _isCancelled = true;
   }
 }
+

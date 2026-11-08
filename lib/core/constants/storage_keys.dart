@@ -16,3 +16,4 @@ abstract final class StorageKeys {
   static const String keyUserProfile = 'user_profile_data';
   static const String keyUserProfileCompleted = 'user_profile_completed';
 }
+

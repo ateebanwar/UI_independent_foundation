@@ -16,3 +16,4 @@ abstract class NetworkClient {
     Map<String, String>? headers,
   });
 }
+

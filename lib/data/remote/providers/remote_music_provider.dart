@@ -7,3 +7,4 @@ abstract class RemoteMusicProvider {
   Future<List<Track>> search(String query);
   Future<String> resolveStreamUri({Track? track, String? trackIdOrQuery});
 }
+

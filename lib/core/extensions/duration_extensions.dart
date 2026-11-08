@@ -15,3 +15,4 @@ extension DurationFormatting on Duration {
     return '$minutesStr:$secondsStr';
   }
 }
+

@@ -86,3 +86,4 @@ This inventory documents all features discovered across the reference implementa
 * **Profile**: Name, date of birth, gender, avatar key, completion status.
 * **Settings**: Theme mode (`light`, `dark`, `system`), app mode (`offline`, `online`), volume, audio quality, repeat mode, shuffle mode.
 * **Persistence**: SQLite `key_value_store`. Zero cloud dependency.
+

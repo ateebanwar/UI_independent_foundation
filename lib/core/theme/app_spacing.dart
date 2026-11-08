@@ -30,3 +30,4 @@ abstract final class AppSpacing {
   static final BorderRadius roundedFavorite = BorderRadius.circular(18.0);
   static final BorderRadius roundedFavoriteBtn = BorderRadius.circular(18.0);
 }
+

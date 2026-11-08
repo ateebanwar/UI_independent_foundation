@@ -45,3 +45,4 @@ class PaginatedList<T> extends Equatable {
   @override
   List<Object?> get props => [items, totalCount, offset, limit];
 }
+

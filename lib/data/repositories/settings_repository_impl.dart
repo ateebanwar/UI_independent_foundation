@@ -159,3 +159,4 @@ class SettingsRepositoryImpl implements SettingsRepository {
     return await setInt(StorageKeys.keyAppThemeMode, mode.index);
   }
 }
+

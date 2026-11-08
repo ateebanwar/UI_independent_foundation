@@ -198,3 +198,4 @@ class WindowsAudioPlayer {
     await _errorController.close();
   }
 }
+

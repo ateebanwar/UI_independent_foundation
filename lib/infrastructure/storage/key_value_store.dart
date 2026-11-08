@@ -131,3 +131,4 @@ class SqliteKeyValueStore implements KeyValueStore {
     await _db.delete('key_value_store');
   }
 }
+

@@ -46,3 +46,4 @@ abstract class PlaylistRepository {
     required int newIndex,
   });
 }
+

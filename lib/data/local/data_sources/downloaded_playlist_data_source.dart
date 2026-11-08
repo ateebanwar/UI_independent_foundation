@@ -227,3 +227,4 @@ class DownloadedPlaylistDataSource {
     return rows.isNotEmpty;
   }
 }
+

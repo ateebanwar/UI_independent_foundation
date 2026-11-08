@@ -5,3 +5,4 @@ class WebBlobUrlHelper {
   static String? createBlobUrl(Uint8List bytes, String mimeType) => null;
   static void revokeBlobUrl(String url) {}
 }
+

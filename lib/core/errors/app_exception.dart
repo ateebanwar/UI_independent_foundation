@@ -71,3 +71,4 @@ class NetworkException extends AppException {
     super.stackTrace,
   });
 }
+

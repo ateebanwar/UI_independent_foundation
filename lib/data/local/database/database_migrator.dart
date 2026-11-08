@@ -55,3 +55,4 @@ class DatabaseMigrator {
     _logger?.info('Database migration completed successfully', tag: 'DatabaseMigrator');
   }
 }
+

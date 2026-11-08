@@ -37,3 +37,4 @@ abstract class HistoryRepository {
   /// Clears listening history.
   Future<Result<void, Failure>> clearHistory();
 }
+

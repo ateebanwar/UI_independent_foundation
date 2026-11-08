@@ -62,3 +62,4 @@ class V3DownloadedPlaylistsSchema implements Migration {
     await db.execute('DROP TABLE IF EXISTS downloaded_playlists;');
   }
 }
+

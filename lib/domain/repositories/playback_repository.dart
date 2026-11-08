@@ -56,3 +56,4 @@ abstract class PlaybackRepository {
   /// Adjusts playback speed (e.g. 0.5x to 2.0x).
   Future<Result<void, Failure>> setSpeed(double speed);
 }
+

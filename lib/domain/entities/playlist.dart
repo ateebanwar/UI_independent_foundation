@@ -79,3 +79,4 @@ class PlaylistItem extends Equatable {
   @override
   List<Object?> get props => [playlistId, trackId, position, addedAt];
 }
+

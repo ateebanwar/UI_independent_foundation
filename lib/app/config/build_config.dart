@@ -26,3 +26,4 @@ class BuildConfig {
   bool get isProduction => environment == AppEnvironment.production;
   bool get isDevelopment => environment == AppEnvironment.development;
 }
+

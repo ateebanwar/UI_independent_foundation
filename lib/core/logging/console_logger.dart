@@ -74,3 +74,4 @@ class ConsoleLogger implements AppLogger {
     _log(LogLevel.error, message, tag: tag, error: error, stackTrace: stackTrace);
   }
 }
+

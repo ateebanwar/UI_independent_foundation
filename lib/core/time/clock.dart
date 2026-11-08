@@ -36,3 +36,4 @@ class FixedClock implements Clock {
     _current = dateTime;
   }
 }
+

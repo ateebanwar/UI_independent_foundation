@@ -46,3 +46,4 @@ abstract final class AppTypography {
     letterSpacing: -0.2,
   );
 }
+

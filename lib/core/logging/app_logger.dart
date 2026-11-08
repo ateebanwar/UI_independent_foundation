@@ -13,3 +13,4 @@ abstract class AppLogger {
   void warning(String message, {String? tag, Object? error, StackTrace? stackTrace});
   void error(String message, {String? tag, Object? error, StackTrace? stackTrace});
 }
+

@@ -94,3 +94,4 @@ class UserProfileRepositoryImpl implements UserProfileRepository {
     }
   }
 }
+

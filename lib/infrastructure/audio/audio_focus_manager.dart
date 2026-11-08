@@ -24,3 +24,4 @@ class DefaultAudioFocusManager implements AudioFocusManager {
   @override
   Future<void> abandonFocus() async {}
 }
+

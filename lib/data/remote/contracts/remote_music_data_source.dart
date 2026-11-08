@@ -16,3 +16,4 @@ abstract class RemoteMusicDataSource {
   Future<List<Track>> fetchPlaylistTracks(String playlistIdOrQuery);
   Future<String> resolveStreamUri(String trackIdOrUri, [Track? track]);
 }
+

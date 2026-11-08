@@ -92,3 +92,4 @@ final class Err<T, F extends Failure> extends Result<T, F> {
   @override
   String toString() => 'Result.err($failure)';
 }
+

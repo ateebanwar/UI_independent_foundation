@@ -23,3 +23,4 @@ extension AppModeExtension on AppMode {
     }
   }
 }
+

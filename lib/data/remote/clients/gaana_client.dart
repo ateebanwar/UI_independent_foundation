@@ -111,7 +111,9 @@ class GaanaClient {
     if (json is List) {
       rawList = json;
     } else if (json is Map<String, dynamic>) {
-      if (json['results'] is List) {
+      if (json['tracks'] is List) {
+        rawList = json['tracks'] as List<dynamic>;
+      } else if (json['results'] is List) {
         rawList = json['results'] as List<dynamic>;
       } else if (json['data'] is List) {
         rawList = json['data'] as List<dynamic>;
@@ -136,15 +138,16 @@ class GaanaClient {
       if (trackId.isEmpty && title.isEmpty) continue;
 
       final artist = JioSaavnClient.unescapeHtml(
-        (map['artist'] ?? map['artists'] ?? map['primary_artist'] ?? 'Unknown Artist').toString(),
+        (map['artist'] ?? map['artists'] ?? map['artist_name'] ?? map['primary_artist'] ?? 'Unknown Artist').toString(),
       );
 
-      final album = map['album'] != null ? JioSaavnClient.unescapeHtml(map['album'].toString()) : null;
+      final albumRaw = map['album'] ?? map['album_title'];
+      final album = albumRaw != null ? JioSaavnClient.unescapeHtml(albumRaw.toString()) : null;
 
       final durationSec = int.tryParse(map['duration']?.toString() ?? '0') ?? 0;
       final duration = Duration(seconds: durationSec);
 
-      final artworkUri = (map['artwork'] ?? map['image'] ?? map['albumart'])?.toString().trim();
+      final artworkUri = (map['artwork'] ?? map['artwork_large'] ?? map['image'] ?? map['albumart'])?.toString().trim();
       final seokey = (map['seokey'] ?? trackId).toString().trim();
       final streamUri = 'gaana://stream?seokey=$seokey';
 
@@ -166,3 +169,4 @@ class GaanaClient {
     return tracks;
   }
 }
+

@@ -23,3 +23,4 @@ class WebBlobUrlHelper {
     } catch (_) {}
   }
 }
+

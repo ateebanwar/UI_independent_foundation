@@ -38,3 +38,4 @@ class EqualizerConfiguration extends Equatable {
   @override
   List<Object?> get props => [isEnabled, bandGains, activePresetId];
 }
+

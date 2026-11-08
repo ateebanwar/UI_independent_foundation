@@ -27,3 +27,4 @@ abstract final class GaanaConfig {
   /// Network timeout for fallback API operations.
   static const Duration timeout = Duration(seconds: 8);
 }
+

@@ -12,3 +12,4 @@ abstract class Migration {
   /// Reverses the migration (if applicable).
   Future<void> down(Database db);
 }
+

@@ -101,3 +101,4 @@ class DownloadedPlaylist extends Equatable {
         tracks,
       ];
 }
+

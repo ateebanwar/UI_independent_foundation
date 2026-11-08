@@ -43,3 +43,4 @@ class AudioMetadata extends Equatable {
         artworkPath,
       ];
 }
+

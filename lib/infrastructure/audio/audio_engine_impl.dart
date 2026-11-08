@@ -564,3 +564,4 @@ class AudioEngineImpl implements AudioEngine {
     await _statusController.close();
   }
 }
+

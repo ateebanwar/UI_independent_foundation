@@ -68,3 +68,4 @@ class HistoryRepositoryImpl implements HistoryRepository {
     }
   }
 }
+

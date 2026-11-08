@@ -83,3 +83,4 @@ abstract final class AppColors {
     stops: [0.0, 0.45, 1.0],
   );
 }
+

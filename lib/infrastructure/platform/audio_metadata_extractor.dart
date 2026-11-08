@@ -290,3 +290,4 @@ class _ParsedId3v2 {
     this.artworkPath,
   });
 }
+

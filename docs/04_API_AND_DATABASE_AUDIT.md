@@ -124,3 +124,4 @@ Data now survives application restart on Windows desktop.
 * **IndexedDB**:
   * SQLite DB file mapped into IndexedDB via `sqflite_common_ffi_web`.
   * Audio binary payloads stored in `offline_audio_blobs` table as raw binary BLOBs and converted on playback to ephemeral Object URLs via `URL.createObjectURL(blob)`.
+

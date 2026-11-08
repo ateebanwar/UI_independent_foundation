@@ -7,3 +7,4 @@ abstract class EqualizerRepository {
   Future<Result<EqualizerConfiguration, Failure>> getConfiguration();
   Future<Result<void, Failure>> saveConfiguration(EqualizerConfiguration configuration);
 }
+

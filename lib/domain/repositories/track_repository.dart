@@ -59,3 +59,4 @@ abstract class TrackRepository {
   /// Observes track count changes or library updates.
   Stream<int> watchTrackCount();
 }
+

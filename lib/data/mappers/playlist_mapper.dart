@@ -30,3 +30,4 @@ abstract final class PlaylistMapper {
     };
   }
 }
+

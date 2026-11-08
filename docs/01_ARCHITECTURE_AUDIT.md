@@ -129,3 +129,4 @@ To satisfy the engineering directive, the reconstructed project in `redesign UI`
 4. **Unified Download Subsystem**: Consolidate `DownloadController` and `DownloadManager` into a single, cohesive, observable download architecture with disk persistence and concurrency limits.
 5. **Real Lyrics Architecture**: Connect `LyricsService` to JioSaavn's live lyrics endpoint with caching, HTML unescaping, timed LRC parsing, and offline metadata extraction.
 6. **Graceful Multi-Provider Resilience**: Update `RemoteMusicDataSourceImpl` to treat JioSaavn as primary and handle Gaana downtime cleanly.
+

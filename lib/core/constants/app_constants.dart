@@ -16,3 +16,4 @@ abstract final class AppConstants {
   static const int maxRecentHistoryItems = 100;
   static const int maxSearchHistoryItems = 20;
 }
+

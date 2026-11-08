@@ -171,3 +171,4 @@ AudioEngine.setEqualizerGains(gains)
 | `web` | `^1.1.1` | Infrastructure | Modern W3C browser APIs for Flutter Web audio and DOM interactions. |
 | `mocktail` | `^1.0.4` | Test | Dev dependency for type-safe null-safe unit test mocking without code-gen. |
 | `flutter_lints` | `^5.0.0` | Quality | Strict static analysis rules. |
+

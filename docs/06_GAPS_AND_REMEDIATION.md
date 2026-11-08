@@ -91,3 +91,4 @@
     * Typed route definitions (`LibraryRoute`, `PlayerRoute`, `PlaylistDetailRoute(playlistId)`, `ArtistDetailRoute(artistName)`).
     * Screen-agnostic route handler contract that allows any future UI system (Material, Cupertino, Neumorphic, Custom) to bind its own visual builders without changing core contracts.
   * Decouple all feature state notifiers: ensure no controller imports `BuildContext`, `Widget`, or visual styling.
+

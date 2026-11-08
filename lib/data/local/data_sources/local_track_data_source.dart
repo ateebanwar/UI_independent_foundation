@@ -1,11 +1,10 @@
-import 'dart:io';
+
 import 'package:echo_bloom/core/types/pagination.dart';
 import 'package:echo_bloom/data/local/database/app_database.dart';
 import 'package:echo_bloom/data/mappers/track_mapper.dart';
 import 'package:echo_bloom/domain/entities/album.dart';
 import 'package:echo_bloom/domain/entities/artist.dart';
 import 'package:echo_bloom/domain/entities/track.dart';
-import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// Concrete local data source executing indexed SQLite queries for tracks.
@@ -172,16 +171,29 @@ class LocalTrackDataSource {
   Future<int> upsertTracks(List<Track> tracks) async {
     if (tracks.isEmpty) return 0;
 
-    final batch = _db.batch();
-    for (final track in tracks) {
-      batch.insert(
-        'tracks',
-        TrackMapper.toDbMap(track),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    final results = await batch.commit(noResult: false);
-    return results.length;
+    int affected = 0;
+    await _db.transaction((txn) async {
+      for (final track in tracks) {
+        final data = TrackMapper.toDbMap(track);
+        final count = await txn.update(
+          'tracks',
+          data,
+          where: 'id = ?',
+          whereArgs: [track.id],
+        );
+        if (count > 0) {
+          affected += count;
+        } else {
+          await txn.insert(
+            'tracks',
+            data,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+          affected++;
+        }
+      }
+    });
+    return affected;
   }
 
   Future<int> deleteTracks(List<String> trackIds) async {

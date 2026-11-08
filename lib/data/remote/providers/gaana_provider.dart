@@ -42,3 +42,4 @@ class GaanaProvider implements RemoteMusicProvider {
     return '';
   }
 }
+

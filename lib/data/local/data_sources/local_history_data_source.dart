@@ -69,3 +69,4 @@ class LocalHistoryDataSource {
     await _db.delete('playback_history');
   }
 }
+

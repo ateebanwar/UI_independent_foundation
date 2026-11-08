@@ -48,3 +48,4 @@ class EqualizerPreset extends Equatable {
   @override
   List<Object?> get props => [id, name, bandGains];
 }
+

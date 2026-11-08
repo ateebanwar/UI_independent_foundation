@@ -277,3 +277,4 @@ class RemoteMusicDataSourceImpl implements RemoteMusicDataSource {
     return const PaginatedList.empty();
   }
 }
+

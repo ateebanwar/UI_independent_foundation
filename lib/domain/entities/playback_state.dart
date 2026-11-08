@@ -97,3 +97,4 @@ class PlaybackState extends Equatable {
         errorMessage,
       ];
 }
+

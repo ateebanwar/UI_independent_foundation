@@ -54,3 +54,4 @@ abstract class SettingsRepository {
   /// Persists theme mode.
   Future<Result<void, Failure>> saveThemeMode(ThemeMode mode);
 }
+

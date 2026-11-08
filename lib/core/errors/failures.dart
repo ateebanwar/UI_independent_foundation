@@ -100,3 +100,4 @@ class UnexpectedFailure extends Failure {
     super.cause,
   });
 }
+
