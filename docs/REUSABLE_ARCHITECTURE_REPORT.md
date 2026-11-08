@@ -111,3 +111,4 @@ void main() async {
 ```
 
 A working headless entry point is provided in `example/foundation_example.dart` demonstrating initialization, search execution, queue manipulation, volume crossfade configuration, and clean shutdown.
+

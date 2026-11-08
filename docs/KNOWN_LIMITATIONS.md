@@ -47,3 +47,4 @@ Echo Bloom utilizes reverse-engineered API endpoints for online music discovery:
 
 - File system write failures may occur if the user's physical internal storage is completely exhausted (< 50 MB remaining).
 - **Mitigation:** `DownloadManager` performs disk space pre-checks prior to initializing multi-track batch downloads and halts gracefully with `StorageFailure` if disk space is insufficient.
+

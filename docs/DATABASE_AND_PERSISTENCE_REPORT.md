@@ -155,3 +155,4 @@ Validated by:
   - Verified `PRAGMA integrity_check;` detection.
   - Verified atomic JSON export and import.
   - Verified corrupt database quarantine and clean recreation.
+

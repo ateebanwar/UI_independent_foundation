@@ -118,6 +118,53 @@ void main() {
       await controller.loadNextPage();
       expect(controller.state.isLoadingMore, false);
     });
+
+    test('Online loadNextPage requests next page and appends new unique remote tracks', () async {
+      final page1Tracks = List.generate(
+        10,
+        (i) => Track(
+          id: 'remote_page1_$i',
+          title: 'Online Song P1 #$i',
+          artist: 'Online Artist',
+          duration: const Duration(seconds: 210),
+          mediaUri: 'https://stream/p1_$i.mp4',
+          sourceType: TrackSourceType.remoteStream,
+          dateAdded: DateTime.now(),
+        ),
+      );
+
+      final page2Tracks = List.generate(
+        10,
+        (i) => Track(
+          id: 'remote_page2_$i',
+          title: 'Online Song P2 #$i',
+          artist: 'Online Artist',
+          duration: const Duration(seconds: 210),
+          mediaUri: 'https://stream/p2_$i.mp4',
+          sourceType: TrackSourceType.remoteStream,
+          dateAdded: DateTime.now(),
+        ),
+      );
+
+      when(() => mockRepo.searchRemoteTracks('Pop', page: 1, limit: 20))
+          .thenAnswer((_) async => Result.ok(page1Tracks));
+      when(() => mockRepo.searchRemoteTracks('Pop', page: 2, limit: 20))
+          .thenAnswer((_) async => Result.ok(page2Tracks));
+
+      controller = SearchController(mockRepo, AppMode.online);
+      await controller.search('Pop', immediate: true);
+
+      expect(controller.state.page, 1);
+      expect(controller.state.hasMore, true);
+      expect(controller.state.remoteResults.length, 10);
+
+      await controller.loadNextPage();
+
+      expect(controller.state.page, 2);
+      expect(controller.state.remoteResults.length, 20);
+      expect(controller.state.isLoadingMore, false);
+      verify(() => mockRepo.searchRemoteTracks('Pop', page: 2, limit: 20)).called(1);
+    });
   });
 }
 

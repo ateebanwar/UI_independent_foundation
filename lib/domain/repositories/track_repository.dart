@@ -18,7 +18,7 @@ abstract class TrackRepository {
   Future<Result<List<Track>, Failure>> searchTracks(String query);
 
   /// Searches remote online music catalog (JioSaavn / Gaana).
-  Future<Result<List<Track>, Failure>> searchRemoteTracks(String query);
+  Future<Result<List<Track>, Failure>> searchRemoteTracks(String query, {int page = 1, int limit = 20});
 
   /// Resolves playable stream URL for a remote track if needed.
   Future<String> resolveStreamUri(String trackIdOrUri, [Track? track]);

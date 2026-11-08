@@ -90,3 +90,4 @@ The download pipeline is validated by `test/features/download_test.dart`:
 - Verified atomic `.tmp` creation and final extension conversion.
 - Verified cancellation cleanup ensuring no leftover `.tmp` files.
 - Verified persistence across mock restarts.
+

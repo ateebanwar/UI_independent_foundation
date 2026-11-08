@@ -48,3 +48,4 @@
 | **30** | User Profile & Listening Stats | `features/profile` | **VERIFIED** | Features / Domain | Passing (`user_profile_test.dart`) | Aggregates total listen time, favorite artist, and top tracks. |
 | **31** | Public Foundation Facade | `app` | **VERIFIED** | App / Core | Passing (`foundation_verification_test.dart`) | Clean public API exported via `echo_bloom_foundation.dart`. |
 | **32** | Visual UI Widgets & Screens | `presentation` | **UI VERIFICATION PENDING** | Presentation | N/A (Excluded by design) | Foundation is 100% headless; UI to be integrated in future phase. |
+

@@ -80,3 +80,4 @@ Benchmarked using an SQLite database containing 10,000 synthetic audio tracks:
 - **In-Memory Query Caching:** Prevents repetitive API network roundtrips when searching identical or related phrases.
 - **Stream Bitrate Negotiation:** Defaults to high-quality 320kbps AAC on Wi-Fi, with automatic bandwidth-saving 160kbps fallback on metered cellular connections.
 - **Chunked File Streaming:** Download tasks write directly to disk streams without loading entire multi-megabyte payloads into RAM.
+

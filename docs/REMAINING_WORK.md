@@ -45,3 +45,4 @@ These tasks require physical hardware deployment on actual Android and iOS smart
    - Verify lockscreen artwork rendering and notification actions on Android 12 through Android 15.
 3. **Heavy Background Battery Test:**
    - Run 8-hour continuous playlist playback on physical Samsung and Xiaomi devices to confirm zero OEM process termination.
+

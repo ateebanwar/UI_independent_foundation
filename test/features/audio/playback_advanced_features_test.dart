@@ -6,6 +6,7 @@ import 'package:echo_bloom/infrastructure/audio/audio_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class StubAudioEngine implements AudioEngine {
+  final String id;
   final _eventsController = StreamController<AudioEngineEvent>.broadcast();
   final _statusController = StreamController<PlaybackStatus>.broadcast();
   final _posController = StreamController<Duration>.broadcast();
@@ -13,6 +14,10 @@ class StubAudioEngine implements AudioEngine {
 
   PlaybackStatus _status = PlaybackStatus.idle;
   Duration _position = Duration.zero;
+  Track? loadedTrack;
+  final List<double> volumeHistory = [];
+
+  StubAudioEngine({this.id = 'primary'});
 
   @override
   Stream<AudioEngineEvent> get events => _eventsController.stream;
@@ -40,6 +45,7 @@ class StubAudioEngine implements AudioEngine {
 
   @override
   Future<void> load(Track track) async {
+    loadedTrack = track;
     _status = PlaybackStatus.loading;
     _statusController.add(_status);
   }
@@ -68,12 +74,11 @@ class StubAudioEngine implements AudioEngine {
     _posController.add(_position);
   }
 
-  final List<double> volumeHistory = [];
-
   @override
   Future<void> setVolume(double volume) async {
     volumeHistory.add(volume);
   }
+
   @override
   Future<void> setSpeed(double speed) async {}
 
@@ -88,7 +93,8 @@ class StubAudioEngine implements AudioEngine {
 
 void main() {
   group('Playback Advanced Features Tests (Sleep Timer, Crossfade, Queue Ops)', () {
-    late StubAudioEngine stubEngine;
+    late StubAudioEngine primaryEngine;
+    late StubAudioEngine standbyEngine;
     late PlaybackRepositoryImpl playbackRepo;
 
     final track1 = Track(
@@ -122,13 +128,18 @@ void main() {
     );
 
     setUp(() {
-      stubEngine = StubAudioEngine();
-      playbackRepo = PlaybackRepositoryImpl(audioEngine: stubEngine);
+      primaryEngine = StubAudioEngine(id: 'primary');
+      standbyEngine = StubAudioEngine(id: 'secondary');
+      playbackRepo = PlaybackRepositoryImpl(
+        audioEngine: primaryEngine,
+        standbyEngine: standbyEngine,
+      );
     });
 
     tearDown(() {
       playbackRepo.dispose();
-      stubEngine.dispose();
+      primaryEngine.dispose();
+      standbyEngine.dispose();
     });
 
     test('Queue reorder moves track and maintains consistent current index', () async {
@@ -165,16 +176,48 @@ void main() {
       expect(playbackRepo.crossfadeDuration, equals(const Duration(seconds: 4)));
     });
 
-    test('Crossfade transition executes volume ramp down and up on skipToNext', () async {
+    test('Overlapping crossfade starts standby engine simultaneously and executes dual-player volume ramps', () async {
       playbackRepo.setCrossfadeDuration(const Duration(milliseconds: 100));
       await playbackRepo.setQueue([track1, track2], initialIndex: 0);
 
-      stubEngine.volumeHistory.clear();
+      expect(primaryEngine.currentStatus, equals(PlaybackStatus.playing));
+      expect(playbackRepo.currentQueue.currentIndex, equals(0));
+
+      primaryEngine.volumeHistory.clear();
+      standbyEngine.volumeHistory.clear();
+
       await playbackRepo.skipToNext();
 
-      expect(stubEngine.volumeHistory, isNotEmpty);
-      expect(stubEngine.volumeHistory.last, equals(1.0));
+      // Standby engine was loaded with song 2 and started playing simultaneously
+      expect(standbyEngine.loadedTrack?.id, equals('song_2'));
+      // Standby engine ramped up volume (starts at 0.0, ends at 1.0)
+      expect(standbyEngine.volumeHistory, isNotEmpty);
+      expect(standbyEngine.volumeHistory.first, equals(0.0));
+      expect(standbyEngine.volumeHistory.last, equals(1.0));
+
+      // Primary engine ramped down volume (fading down to 0.0)
+      expect(primaryEngine.volumeHistory, isNotEmpty);
+      expect(primaryEngine.volumeHistory.any((v) => v < 1.0), isTrue);
+
+      // Transition finished: queue index moved to 1
       expect(playbackRepo.currentQueue.currentIndex, equals(1));
+      expect(playbackRepo.currentState.currentTrack?.id, equals('song_2'));
+      expect(playbackRepo.isCrossfading, isFalse);
+    });
+
+    test('Gapless switch executes instant swap when next track is preloaded', () async {
+      playbackRepo.setCrossfadeDuration(Duration.zero);
+      await playbackRepo.setQueue([track1, track2], initialIndex: 0);
+
+      // Preload next track onto standby engine
+      await standbyEngine.load(track2);
+      expect(standbyEngine.loadedTrack?.id, equals('song_2'));
+
+      // Skip to next with crossfade=0
+      await playbackRepo.skipToNext();
+
+      expect(playbackRepo.currentQueue.currentIndex, equals(1));
+      expect(playbackRepo.currentState.currentTrack?.id, equals('song_2'));
     });
 
     test('Sleep timer sets remaining countdown and emits via sleepTimerStream', () async {

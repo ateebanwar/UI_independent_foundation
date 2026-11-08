@@ -8,7 +8,7 @@ import 'package:echo_bloom/domain/entities/track.dart';
 abstract class RemoteMusicDataSource {
   Future<PaginatedList<Track>> fetchTracks(PageQuery query);
   Future<Track?> fetchTrackById(String id);
-  Future<List<Track>> searchRemoteCatalog(String query);
+  Future<List<Track>> searchRemoteCatalog(String query, {int page = 1, int limit = 20});
   Future<List<Artist>> fetchArtists([String? query]);
   Future<List<Album>> fetchAlbums([String? query]);
   Future<List<Track>> fetchAlbumTracks(String albumUrlOrId);

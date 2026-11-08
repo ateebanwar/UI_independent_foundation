@@ -183,46 +183,99 @@ class DownloadController extends StateNotifier<DownloadState> {
         throw Exception('Playable audio stream could not be resolved');
       }
 
-      final response = await _client.get(
-        Uri.parse(streamUrl),
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
-        },
-      );
+      final request = http.Request('GET', Uri.parse(streamUrl));
+      request.headers['User-Agent'] =
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0';
 
-      if (response.statusCode != 200 && response.statusCode != 206) {
-        throw Exception('Audio download failed with HTTP status ${response.statusCode}');
-      }
+      final streamedResponse = await _client.send(request);
 
-      final bytes = response.bodyBytes;
-      if (bytes.length < 1024) {
-        throw Exception('Downloaded file too small (${bytes.length} bytes)');
+      if (streamedResponse.statusCode != 200 && streamedResponse.statusCode != 206) {
+        throw Exception('Audio download failed with HTTP status ${streamedResponse.statusCode}');
       }
 
       String offlineUri;
-      final storage = _offlineStorage;
-      if (storage != null) {
-        offlineUri = await storage.saveAudio(
-          trackId: track.id,
-          bytes: bytes,
-          mimeType: response.headers['content-type'] ?? 'audio/mp4',
-        );
+      int totalBytesDownloaded = 0;
+
+      if (kIsWeb) {
+        final byteChunks = <List<int>>[];
+        await for (final chunk in streamedResponse.stream) {
+          if (_pausedTrackIds.contains(track.id)) {
+            throw Exception('Download paused');
+          }
+          byteChunks.add(chunk);
+          totalBytesDownloaded += chunk.length;
+        }
+
+        if (totalBytesDownloaded < 1024) {
+          throw Exception('Downloaded file too small ($totalBytesDownloaded bytes)');
+        }
+
+        final fullBytes = byteChunks.expand((c) => c).toList();
+        final storage = _offlineStorage;
+        if (storage != null) {
+          offlineUri = await storage.saveAudio(
+            trackId: track.id,
+            bytes: fullBytes,
+            mimeType: streamedResponse.headers['content-type'] ?? 'audio/mp4',
+          );
+        } else {
+          offlineUri = 'offline://track/${track.id}';
+        }
       } else {
         final appDir = await getApplicationDocumentsDirectory();
         final downloadDir = Directory('${appDir.path}/downloads');
         if (!downloadDir.existsSync()) {
           await downloadDir.create(recursive: true);
         }
+
         final safeId = track.id.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+        final tmpFile = File('${downloadDir.path}/$safeId.tmp');
         final finalFile = File('${downloadDir.path}/$safeId.m4a');
-        await finalFile.writeAsBytes(bytes, flush: true);
-        offlineUri = finalFile.path;
+
+        final sink = tmpFile.openWrite();
+        try {
+          await for (final chunk in streamedResponse.stream) {
+            if (_pausedTrackIds.contains(track.id)) {
+              await sink.close();
+              if (tmpFile.existsSync()) await tmpFile.delete();
+              throw Exception('Download paused');
+            }
+            sink.add(chunk);
+            totalBytesDownloaded += chunk.length;
+          }
+          await sink.flush();
+        } finally {
+          await sink.close();
+        }
+
+        if (totalBytesDownloaded < 1024) {
+          if (tmpFile.existsSync()) await tmpFile.delete();
+          throw Exception('Downloaded file too small ($totalBytesDownloaded bytes)');
+        }
+
+        // Atomic file promotion
+        if (finalFile.existsSync()) {
+          await finalFile.delete();
+        }
+        await tmpFile.rename(finalFile.path);
+
+        final storage = _offlineStorage;
+        if (storage != null) {
+          final bytes = await finalFile.readAsBytes();
+          offlineUri = await storage.saveAudio(
+            trackId: track.id,
+            bytes: bytes,
+            mimeType: streamedResponse.headers['content-type'] ?? 'audio/mp4',
+          );
+        } else {
+          offlineUri = finalFile.path;
+        }
       }
 
       final downloadedTrack = track.copyWith(
         mediaUri: offlineUri,
         sourceType: TrackSourceType.downloaded,
-        fileSize: bytes.length,
+        fileSize: totalBytesDownloaded,
         dateAdded: DateTime.now(),
       );
 

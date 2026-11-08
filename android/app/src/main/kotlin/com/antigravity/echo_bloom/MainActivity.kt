@@ -31,6 +31,10 @@ class MainActivity : FlutterActivity(), MediaPlaybackService.MediaActionListener
         set(value) {
             MediaPlaybackService.activePlayer = value
         }
+    private var secondaryMediaPlayer: MediaPlayer? = null
+    private var isSecondaryPrepared: Boolean = false
+    private var isSecondaryPreparing: Boolean = false
+
     private var equalizer: Equalizer? = null
     private var isEqEnabled: Boolean = true
     private var pendingEqGains: List<Double>? = null
@@ -225,6 +229,20 @@ class MainActivity : FlutterActivity(), MediaPlaybackService.MediaActionListener
                             return@setMethodCallHandler
                         }
 
+                        val playerId = call.argument<String>("playerId") ?: "primary"
+                        if (playerId == "secondary") {
+                            initSecondaryMediaPlayer(uriStr) { success, durationMs, errorMsg ->
+                                runOnUiThread {
+                                    if (success) {
+                                        result.success(mapOf("duration" to durationMs))
+                                    } else {
+                                        result.error("LOAD_FAILED", errorMsg ?: "Failed to load secondary audio", null)
+                                    }
+                                }
+                            }
+                            return@setMethodCallHandler
+                        }
+
                         currentTrackTitle = call.argument<String>("title") ?: "Unknown Title"
                         currentTrackArtist = call.argument<String>("artist") ?: "Unknown Artist"
                         currentTrackAlbum = call.argument<String>("album") ?: ""
@@ -251,6 +269,20 @@ class MainActivity : FlutterActivity(), MediaPlaybackService.MediaActionListener
                         }
                     }
                     "play" -> {
+                        val playerId = call.argument<String>("playerId") ?: "primary"
+                        if (playerId == "secondary") {
+                            try {
+                                secondaryMediaPlayer?.let { player ->
+                                    if (isSecondaryPrepared && !player.isPlaying) {
+                                        player.start()
+                                    }
+                                }
+                                result.success(null)
+                            } catch (e: Exception) {
+                                result.error("PLAY_ERROR", e.message, null)
+                            }
+                            return@setMethodCallHandler
+                        }
                         try {
                             if (isPreparing) {
                                 playWhenReady = true
@@ -271,6 +303,20 @@ class MainActivity : FlutterActivity(), MediaPlaybackService.MediaActionListener
                         }
                     }
                     "pause" -> {
+                        val playerId = call.argument<String>("playerId") ?: "primary"
+                        if (playerId == "secondary") {
+                            try {
+                                secondaryMediaPlayer?.let { player ->
+                                    if (isSecondaryPrepared && player.isPlaying) {
+                                        player.pause()
+                                    }
+                                }
+                                result.success(null)
+                            } catch (e: Exception) {
+                                result.error("PAUSE_ERROR", e.message, null)
+                            }
+                            return@setMethodCallHandler
+                        }
                         try {
                             playWhenReady = false
                             mediaPlayer?.let { player ->
@@ -286,6 +332,24 @@ class MainActivity : FlutterActivity(), MediaPlaybackService.MediaActionListener
                         }
                     }
                     "stop" -> {
+                        val playerId = call.argument<String>("playerId") ?: "primary"
+                        if (playerId == "secondary") {
+                            try {
+                                isSecondaryPrepared = false
+                                isSecondaryPreparing = false
+                                secondaryMediaPlayer?.let { player ->
+                                    try {
+                                        if (player.isPlaying) player.stop()
+                                        player.release()
+                                    } catch (_: Exception) {}
+                                }
+                                secondaryMediaPlayer = null
+                                result.success(null)
+                            } catch (e: Exception) {
+                                result.error("STOP_ERROR", e.message, null)
+                            }
+                            return@setMethodCallHandler
+                        }
                         try {
                             playWhenReady = false
                             isPrepared = false
@@ -306,14 +370,17 @@ class MainActivity : FlutterActivity(), MediaPlaybackService.MediaActionListener
                         }
                     }
                     "seek" -> {
+                        val playerId = call.argument<String>("playerId") ?: "primary"
                         val positionMs = call.argument<Int>("position") ?: 0
                         try {
-                            mediaPlayer?.let { player ->
-                                if (isPrepared) {
+                            val player = if (playerId == "secondary") secondaryMediaPlayer else mediaPlayer
+                            val prepared = if (playerId == "secondary") isSecondaryPrepared else isPrepared
+                            player?.let { p ->
+                                if (prepared) {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                        player.seekTo(positionMs.toLong(), MediaPlayer.SEEK_CLOSEST)
+                                        p.seekTo(positionMs.toLong(), MediaPlayer.SEEK_CLOSEST)
                                     } else {
-                                        player.seekTo(positionMs)
+                                        p.seekTo(positionMs)
                                     }
                                 }
                             }
@@ -323,12 +390,47 @@ class MainActivity : FlutterActivity(), MediaPlaybackService.MediaActionListener
                         }
                     }
                     "setVolume" -> {
+                        val playerId = call.argument<String>("playerId") ?: "primary"
                         val volume = (call.argument<Double>("volume") ?: 1.0).toFloat()
                         try {
-                            mediaPlayer?.setVolume(volume, volume)
+                            if (playerId == "secondary") {
+                                secondaryMediaPlayer?.setVolume(volume, volume)
+                            } else {
+                                mediaPlayer?.setVolume(volume, volume)
+                            }
                             result.success(null)
                         } catch (e: Exception) {
                             result.error("VOLUME_ERROR", e.message, null)
+                        }
+                    }
+                    "swapPlayers" -> {
+                        try {
+                            val tempPlayer = mediaPlayer
+                            mediaPlayer = secondaryMediaPlayer
+                            secondaryMediaPlayer = tempPlayer
+
+                            val tempPrepared = isPrepared
+                            isPrepared = isSecondaryPrepared
+                            isSecondaryPrepared = tempPrepared
+
+                            val tempPreparing = isPreparing
+                            isPreparing = isSecondaryPreparing
+                            isSecondaryPreparing = tempPreparing
+
+                            mediaPlayer?.let { player ->
+                                if (isPrepared) {
+                                    try {
+                                        equalizer?.release()
+                                        val eq = Equalizer(0, player.audioSessionId)
+                                        eq.enabled = isEqEnabled
+                                        equalizer = eq
+                                        pendingEqGains?.let { applyEqualizerBands(it) }
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                            result.success(null)
+                        } catch (e: Exception) {
+                            result.error("SWAP_ERROR", e.message, null)
                         }
                     }
                     "setSpeed" -> {
@@ -514,6 +616,63 @@ class MainActivity : FlutterActivity(), MediaPlaybackService.MediaActionListener
                 isLoadCallbackInvoked = true
                 callback(false, 0, e.message)
             }
+        }
+    }
+
+    private fun initSecondaryMediaPlayer(uriStr: String, callback: (Boolean, Int, String?) -> Unit) {
+        try {
+            isSecondaryPreparing = true
+            isSecondaryPrepared = false
+            secondaryMediaPlayer?.apply {
+                try {
+                    if (isPlaying) stop()
+                    release()
+                } catch (_: Exception) {}
+            }
+            secondaryMediaPlayer = null
+
+            val player = MediaPlayer()
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .build()
+            )
+
+            if (uriStr.startsWith("content://")) {
+                player.setDataSource(applicationContext, Uri.parse(uriStr))
+            } else if (uriStr.startsWith("assets/")) {
+                val assetKey = flutterEngine?.dartExecutor?.let {
+                    io.flutter.FlutterInjector.instance().flutterLoader().getLookupKeyForAsset(uriStr)
+                } ?: uriStr
+                val afd = assets.openFd(assetKey)
+                player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
+            } else if (uriStr.startsWith("http://") || uriStr.startsWith("https://")) {
+                player.setDataSource(this@MainActivity, Uri.parse(uriStr))
+            } else {
+                player.setDataSource(uriStr)
+            }
+
+            player.setOnPreparedListener { mp ->
+                isSecondaryPrepared = true
+                isSecondaryPreparing = false
+                callback(true, mp.duration, null)
+            }
+
+            player.setOnErrorListener { _, what, extra ->
+                isSecondaryPrepared = false
+                isSecondaryPreparing = false
+                callback(false, 0, "Secondary MediaPlayer error: what=$what, extra=$extra")
+                true
+            }
+
+            player.prepareAsync()
+            secondaryMediaPlayer = player
+        } catch (e: Exception) {
+            isSecondaryPrepared = false
+            isSecondaryPreparing = false
+            callback(false, 0, e.message)
         }
     }
 

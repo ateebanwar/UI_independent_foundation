@@ -72,12 +72,12 @@ class TrackRepositoryImpl implements TrackRepository {
   }
 
   @override
-  Future<Result<List<Track>, Failure>> searchRemoteTracks(String query) async {
+  Future<Result<List<Track>, Failure>> searchRemoteTracks(String query, {int page = 1, int limit = 20}) async {
     if (_remoteDataSource == null) {
       return const Result.ok([]);
     }
     try {
-      final tracks = await _remoteDataSource.searchRemoteCatalog(query);
+      final tracks = await _remoteDataSource.searchRemoteCatalog(query, page: page, limit: limit);
       return Result.ok(tracks);
     } catch (e, stack) {
       _logger?.error('Error searching remote tracks', tag: 'TrackRepository', error: e, stackTrace: stack);

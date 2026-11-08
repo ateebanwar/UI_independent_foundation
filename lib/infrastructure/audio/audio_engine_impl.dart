@@ -17,10 +17,11 @@ import 'package:flutter/services.dart';
 /// Supports W3C HTMLAudioElement on Web.
 /// Supports media notification actions (play/pause/skip) via native MediaPlaybackService.
 class AudioEngineImpl implements AudioEngine {
+  final String playerId;
   final AppLogger? _logger;
   final OfflineAudioStorage? _offlineStorage;
   final WebAudioPlayer _webPlayer = WebAudioPlayer();
-  final WindowsAudioPlayer _winPlayer = WindowsAudioPlayer();
+  final WindowsAudioPlayer _winPlayer;
 
   static const MethodChannel _nativePlayerChannel =
       MethodChannel('com.antigravity.echo_bloom/audio_player');
@@ -53,16 +54,27 @@ class AudioEngineImpl implements AudioEngine {
   void Function(String action)? onMediaAction;
 
   AudioEngineImpl({
+    this.playerId = 'primary',
     AppLogger? logger,
     OfflineAudioStorage? offlineStorage,
   })  : _logger = logger,
-        _offlineStorage = offlineStorage {
-    if (_isAndroid) {
+        _offlineStorage = offlineStorage,
+        _winPlayer = WindowsAudioPlayer(alias: 'echo_bloom_audio_$playerId') {
+    if (_isAndroid && playerId == 'primary') {
       _nativePlayerChannel.setMethodCallHandler(_handleNativeCall);
     } else if (kIsWeb && _webPlayer.isSupported) {
       _initWebPlayerListeners();
     } else if (_isWindows && _winPlayer.isSupported) {
       _initWindowsPlayerListeners();
+    }
+  }
+
+  /// Swaps primary and secondary native player instances after crossfade.
+  static Future<void> swapNativePlayers() async {
+    if (!kIsWeb && Platform.isAndroid) {
+      try {
+        await _nativePlayerChannel.invokeMethod('swapPlayers');
+      } catch (_) {}
     }
   }
 
@@ -258,6 +270,7 @@ class AudioEngineImpl implements AudioEngine {
           'artist': track.artist,
           'album': track.album,
           'artworkPath': track.artworkUri,
+          'playerId': playerId,
         });
         if (res != null && res['duration'] != null) {
           final durMs = (res['duration'] as num).toInt();
@@ -300,7 +313,7 @@ class AudioEngineImpl implements AudioEngine {
 
     if (_isAndroid) {
       try {
-        await _nativePlayerChannel.invokeMethod('play');
+        await _nativePlayerChannel.invokeMethod('play', {'playerId': playerId});
         _updateStatus(PlaybackStatus.playing);
         return;
       } catch (e) {
@@ -340,7 +353,7 @@ class AudioEngineImpl implements AudioEngine {
     _logger?.info('Pause requested', tag: 'AudioEngine');
     if (_isAndroid) {
       try {
-        await _nativePlayerChannel.invokeMethod('pause');
+        await _nativePlayerChannel.invokeMethod('pause', {'playerId': playerId});
       } catch (_) {}
     } else if (_isWindows && _winPlayer.isSupported) {
       try {
@@ -360,7 +373,7 @@ class AudioEngineImpl implements AudioEngine {
     _logger?.info('Stop requested', tag: 'AudioEngine');
     if (_isAndroid) {
       try {
-        await _nativePlayerChannel.invokeMethod('stop');
+        await _nativePlayerChannel.invokeMethod('stop', {'playerId': playerId});
       } catch (_) {}
     } else if (_isWindows && _winPlayer.isSupported) {
       try {
@@ -390,7 +403,10 @@ class AudioEngineImpl implements AudioEngine {
 
     if (_isAndroid) {
       try {
-        await _nativePlayerChannel.invokeMethod('seek', {'position': clampedMs});
+        await _nativePlayerChannel.invokeMethod('seek', {
+          'position': clampedMs,
+          'playerId': playerId,
+        });
       } catch (_) {}
     } else if (_isWindows && _winPlayer.isSupported) {
       try {
@@ -419,7 +435,10 @@ class AudioEngineImpl implements AudioEngine {
     _logger?.debug('Volume set to $_volume', tag: 'AudioEngine');
     if (_isAndroid) {
       try {
-        await _nativePlayerChannel.invokeMethod('setVolume', {'volume': _volume});
+        await _nativePlayerChannel.invokeMethod('setVolume', {
+          'volume': _volume,
+          'playerId': playerId,
+        });
       } catch (_) {}
     } else if (_isWindows && _winPlayer.isSupported) {
       try {
@@ -438,7 +457,10 @@ class AudioEngineImpl implements AudioEngine {
     _logger?.debug('Playback speed set to $_speed', tag: 'AudioEngine');
     if (_isAndroid) {
       try {
-        await _nativePlayerChannel.invokeMethod('setSpeed', {'speed': _speed});
+        await _nativePlayerChannel.invokeMethod('setSpeed', {
+          'speed': _speed,
+          'playerId': playerId,
+        });
       } catch (_) {}
     } else if (_isWindows && _winPlayer.isSupported) {
       try {

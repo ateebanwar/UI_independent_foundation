@@ -32,28 +32,28 @@ class RemoteMusicDataSourceImpl implements RemoteMusicDataSource {
         _logger = logger;
 
   @override
-  Future<List<Track>> searchRemoteCatalog(String query) async {
+  Future<List<Track>> searchRemoteCatalog(String query, {int page = 1, int limit = 20}) async {
     final trimmed = JioSaavnClient.normalizeQuery(query);
     if (trimmed.isEmpty) return const [];
 
-    final cacheKey = trimmed.toLowerCase();
+    final cacheKey = '${trimmed.toLowerCase()}:$page:$limit';
     if (_searchCache.containsKey(cacheKey)) {
-      _logger?.info('Returning cached remote search for: "$trimmed"', tag: 'RemoteMusicDataSource');
+      _logger?.info('Returning cached remote search for: "$trimmed" (page: $page)', tag: 'RemoteMusicDataSource');
       return _searchCache[cacheKey]!;
     }
 
-    _logger?.info('Executing primary search with JioSaavn for: "$trimmed"', tag: 'RemoteMusicDataSource');
+    _logger?.info('Executing primary search with JioSaavn for: "$trimmed" (page: $page, limit: $limit)', tag: 'RemoteMusicDataSource');
 
     // 1. Primary Provider: JioSaavn
     List<Track> results = const [];
     try {
-      results = await _jioSaavnClient.search(trimmed);
+      results = await _jioSaavnClient.search(trimmed, page: page, limit: limit);
     } catch (e, stack) {
       _logger?.warning('JioSaavn search exception: $e', tag: 'RemoteMusicDataSource', error: e, stackTrace: stack);
     }
 
     // 2. Fallback Provider: Gaana if JioSaavn returned no results
-    if (results.isEmpty) {
+    if (results.isEmpty && page == 1) {
       _logger?.info('JioSaavn returned no usable results. Attempting Gaana fallback for: "$trimmed"', tag: 'RemoteMusicDataSource');
       try {
         results = await _gaanaProvider.search(trimmed);

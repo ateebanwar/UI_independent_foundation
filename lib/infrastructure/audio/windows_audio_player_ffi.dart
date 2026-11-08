@@ -19,7 +19,7 @@ typedef _MciSendStringDart = int Function(
 
 /// Native WinMM (Windows MultiMedia) MCI audio driver for genuine Windows desktop playback.
 class WindowsAudioPlayer {
-  static const String _alias = 'echo_bloom_audio';
+  final String _alias;
 
   final StreamController<Duration> _positionController = StreamController<Duration>.broadcast();
   final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
@@ -39,7 +39,7 @@ class WindowsAudioPlayer {
   Duration _lastDuration = Duration.zero;
   bool _isPlaying = false;
 
-  WindowsAudioPlayer() {
+  WindowsAudioPlayer({String alias = 'echo_bloom_audio'}) : _alias = alias {
     if (Platform.isWindows) {
       try {
         final winmm = DynamicLibrary.open('winmm.dll');

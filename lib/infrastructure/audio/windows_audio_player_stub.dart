@@ -2,6 +2,8 @@ import 'dart:async';
 
 /// Stub implementation of WindowsAudioPlayer for non-IO platforms (e.g. Web).
 class WindowsAudioPlayer {
+  WindowsAudioPlayer({String alias = 'echo_bloom_audio'});
+
   final StreamController<Duration> _positionController = StreamController<Duration>.broadcast();
   final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
   final StreamController<void> _endedController = StreamController<void>.broadcast();

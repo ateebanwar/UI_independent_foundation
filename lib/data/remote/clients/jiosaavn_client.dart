@@ -42,18 +42,18 @@ class JioSaavnClient {
   }
 
   /// Searches JioSaavn catalog for matching tracks with relevance ranking and deduplication.
-  Future<List<Track>> search(String query) async {
+  Future<List<Track>> search(String query, {int page = 1, int limit = 20}) async {
     final trimmed = normalizeQuery(query);
     if (trimmed.isEmpty) return const [];
 
-    final tracks = await _fetchSearchResults(trimmed);
+    final tracks = await _fetchSearchResults(trimmed, page: page, limit: limit);
     if (tracks.isNotEmpty) {
       return rankAndDeduplicate(tracks, trimmed);
     }
 
     final sanitized = trimmed.replaceAll(RegExp(r'[^a-zA-Z0-9 ]'), '').trim();
     if (sanitized.isNotEmpty && sanitized != trimmed) {
-      final retryTracks = await _fetchSearchResults(sanitized);
+      final retryTracks = await _fetchSearchResults(sanitized, page: page, limit: limit);
       if (retryTracks.isNotEmpty) {
         return rankAndDeduplicate(retryTracks, sanitized);
       }
@@ -62,9 +62,9 @@ class JioSaavnClient {
     return const [];
   }
 
-  Future<List<Track>> _fetchSearchResults(String queryStr) async {
+  Future<List<Track>> _fetchSearchResults(String queryStr, {int page = 1, int limit = 20}) async {
     final uri = Uri.parse(
-      '${JioSaavnConfig.baseUrl}${JioSaavnConfig.searchEndpoint}?query=${Uri.encodeComponent(queryStr)}',
+      '${JioSaavnConfig.baseUrl}${JioSaavnConfig.searchEndpoint}?query=${Uri.encodeComponent(queryStr)}&page=$page&limit=$limit',
     );
 
     _logger?.info('JioSaavn search requested: $uri', tag: 'JioSaavnClient');

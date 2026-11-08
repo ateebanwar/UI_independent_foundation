@@ -22,6 +22,28 @@ class PlaybackQueue extends Equatable {
   Track? get currentTrack =>
       (currentIndex >= 0 && currentIndex < currentList.length) ? currentList[currentIndex] : null;
 
+  /// Returns the next track in the queue without advancing current index.
+  Track? peekNext() {
+    if (isEmpty) return null;
+    if (currentIndex < currentList.length - 1) {
+      return currentList[currentIndex + 1];
+    } else if (repeatMode != RepeatMode.off && currentList.isNotEmpty) {
+      return currentList[0];
+    }
+    return null;
+  }
+
+  /// Returns the previous track in the queue without moving current index.
+  Track? peekPrevious() {
+    if (isEmpty) return null;
+    if (currentIndex > 0) {
+      return currentList[currentIndex - 1];
+    } else if (repeatMode != RepeatMode.off && currentList.isNotEmpty) {
+      return currentList[currentList.length - 1];
+    }
+    return null;
+  }
+
   bool get isEmpty => currentList.isEmpty;
   bool get hasNext => currentIndex < currentList.length - 1 || repeatMode != RepeatMode.off;
   bool get hasPrevious => currentIndex > 0 || repeatMode != RepeatMode.off;

@@ -109,3 +109,4 @@ Validated by `test/features/equalizer_test.dart`:
 - Verified preset loading applies correct band values.
 - Verified manual gain adjustments mark active preset as custom.
 - Verified toggle enable/disable propagates to audio engine.
+

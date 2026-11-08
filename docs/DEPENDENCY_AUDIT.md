@@ -46,3 +46,4 @@ Monolithic UI kits, animation libraries, heavy icon packs, and analytics SDKs ha
 2. **Icon Tree-Shaking:** Flutter's built-in icon tree-shaker pruned the default `MaterialIcons-Regular.otf` font from **1,645 KB down to 1.7 KB (99.9% reduction)**.
 3. **No Heavy Analytical SDKs:** Zero tracking, Firebase, or advertising SDKs.
 4. **ABI Split Native Overhead:** Instead of bundling `armeabi-v7a`, `arm64-v8a`, and `x86_64` `.so` files into a single fat 45 MB APK, ABI splits isolate only the required binary for each CPU architecture, saving ~20-25 MB per user install.
+

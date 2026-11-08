@@ -234,3 +234,4 @@ class LyricsWidget extends ConsumerWidget {
 - [x] Zero breaking API dependencies for presentation layer.
 - [x] All state changes broadcast reactively over Riverpod providers.
 - [x] Mode switching (`AppMode.offline` vs `AppMode.online`) completely automated.
+

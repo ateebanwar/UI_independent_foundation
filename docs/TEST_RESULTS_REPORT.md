@@ -12,8 +12,8 @@
 Echo Bloom includes a test suite covering the entire headless foundation. All tests execute independently of UI widgets using Flutter's headless test harness (`flutter test`).
 
 - **Total Test Suites Executed:** 24
-- **Total Automated Test Cases:** 96+
-- **Passing Tests:** 96+ (100.0%)
+- **Total Automated Test Cases:** 100
+- **Passing Tests:** 100 (100.0%)
 - **Failing Tests:** 0
 - **Skipped / Flaky Tests:** 0
 - **Static Analysis Issues:** 0 (`flutter analyze` reports "No issues found!")
@@ -56,3 +56,4 @@ Echo Bloom includes a test suite covering the entire headless foundation. All te
 2. **Contract & Mock Tests:** Mocktail-based tests verifying repository-to-client contracts, network timeouts, and mode switching.
 3. **Database Integration Tests:** In-memory SQLite instances verifying true SQL transactions, foreign key cascades, and migrations without file disk I/O overhead.
 4. **Resiliency Edge Cases:** Tested network drops, invalid JSON payloads, corrupt database files, cancelled downloads, and audio decoder failures.
+

@@ -192,7 +192,7 @@ class SearchController extends StateNotifier<SearchState> {
         clearStatus: true,
       );
     } else {
-      final remoteRes = await _trackRepository.searchRemoteTracks(trimmed);
+      final remoteRes = await _trackRepository.searchRemoteTracks(trimmed, page: 1, limit: 20);
       if (sequence != _searchSequence) return;
 
       final tracks = remoteRes.valueOrNull ?? [];
@@ -260,14 +260,14 @@ class SearchController extends StateNotifier<SearchState> {
           );
         }
       } else {
-        final res = await _trackRepository.searchRemoteTracks(state.query);
+        final res = await _trackRepository.searchRemoteTracks(state.query, page: nextPage, limit: 20);
         final tracks = res.valueOrNull ?? [];
         final existingIds = state.remoteResults.map((t) => t.id).toSet();
         final newTracks = tracks.where((t) => !existingIds.contains(t.id)).toList();
         state = state.copyWith(
           isLoadingMore: false,
           page: nextPage,
-          hasMore: false,
+          hasMore: newTracks.length >= 20,
           remoteResults: [...state.remoteResults, ...newTracks],
         );
       }

@@ -14,7 +14,9 @@ import 'package:echo_bloom/infrastructure/audio/audio_engine_impl.dart';
 /// Concrete implementation of [PlaybackRepository].
 /// Coordinates the [AudioEngine] abstraction, [PlaybackQueue], and [HistoryRepository].
 class PlaybackRepositoryImpl implements PlaybackRepository {
-  final AudioEngine _audioEngine;
+  AudioEngine _audioEngine;
+  AudioEngine? _standbyEngine;
+  final AudioEngine Function()? _engineFactory;
   final HistoryRepository? _historyRepository;
   final TrackRepository? _trackRepository;
   final AppLogger? _logger;
@@ -42,8 +44,12 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
   final StreamController<Duration?> _sleepTimerController =
       StreamController<Duration?>.broadcast();
 
-  // Crossfade state
+  // Crossfade & Gapless state
   Duration _crossfadeDuration = Duration.zero;
+  Track? _preloadedTrack;
+  bool _isNextTrackPreloading = false;
+  bool _isNextTrackPreloaded = false;
+  bool _isCrossfading = false;
 
   StreamSubscription<AudioEngineEvent>? _eventSub;
   StreamSubscription<PlaybackStatus>? _statusSub;
@@ -52,18 +58,42 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
 
   PlaybackRepositoryImpl({
     required AudioEngine audioEngine,
+    AudioEngine? standbyEngine,
+    AudioEngine Function()? engineFactory,
     HistoryRepository? historyRepository,
     TrackRepository? trackRepository,
     AppLogger? logger,
   })  : _audioEngine = audioEngine,
+        _standbyEngine = standbyEngine,
+        _engineFactory = engineFactory,
         _historyRepository = historyRepository,
         _trackRepository = trackRepository,
         _logger = logger {
+    if (_standbyEngine == null) {
+      final factory = _engineFactory;
+      if (factory != null) {
+        _standbyEngine = factory();
+      } else if (audioEngine is AudioEngineImpl) {
+        _standbyEngine = AudioEngineImpl(playerId: 'secondary', logger: _logger);
+      }
+    }
     _initEngineListeners();
     if (audioEngine is AudioEngineImpl) {
       audioEngine.onMediaAction = _handleMediaAction;
     }
   }
+
+  /// Standby audio engine instance used for gapless pre-buffering and overlapping crossfade.
+  AudioEngine? get standbyEngine => _standbyEngine;
+
+  /// Whether an overlapping crossfade transition is currently active.
+  bool get isCrossfading => _isCrossfading;
+
+  /// Whether the upcoming track in the queue is already decoded and preloaded.
+  bool get isNextTrackPreloaded => _isNextTrackPreloaded;
+
+  /// The preloaded standby track.
+  Track? get preloadedTrack => _preloadedTrack;
 
   void _handleMediaAction(String action) {
     switch (action) {
@@ -74,6 +104,14 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
         skipToPrevious();
         break;
     }
+  }
+
+  void _rebindPrimaryEngineSubscriptions() {
+    _eventSub?.cancel();
+    _statusSub?.cancel();
+    _posSub?.cancel();
+    _durSub?.cancel();
+    _initEngineListeners();
   }
 
   void _initEngineListeners() {
@@ -169,13 +207,75 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
           ));
         }
       }
+
+      // Crossfade & Gapless preloading checks
+      if (_currentState.duration > Duration.zero) {
+        final remaining = _currentState.duration - position;
+        final preloadThreshold = _crossfadeDuration > Duration.zero
+            ? _crossfadeDuration + const Duration(seconds: 4)
+            : const Duration(seconds: 4);
+
+        if (!_isNextTrackPreloading &&
+            !_isNextTrackPreloaded &&
+            !_isCrossfading &&
+            _queue.hasNext &&
+            remaining > Duration.zero &&
+            remaining <= preloadThreshold) {
+          unawaited(_preloadNextTrack());
+        }
+
+        if (_crossfadeDuration > Duration.zero &&
+            !_isCrossfading &&
+            _queue.hasNext &&
+            remaining > Duration.zero &&
+            remaining <= _crossfadeDuration) {
+          unawaited(_performOverlappingCrossfade());
+        }
+      }
     } else {
       _lastPlayTimestamp = null;
       _lastObservedPosition = position;
     }
   }
 
+  Future<void> _preloadNextTrack() async {
+    if (_isNextTrackPreloading || _isNextTrackPreloaded || _standbyEngine == null || !_queue.hasNext) {
+      return;
+    }
+
+    final nextTrack = _queue.peekNext();
+    if (nextTrack == null) return;
+
+    _isNextTrackPreloading = true;
+    try {
+      Track trackToPreload = nextTrack;
+      if (trackToPreload.sourceType == TrackSourceType.remoteStream &&
+          (trackToPreload.mediaUri.isEmpty || !trackToPreload.mediaUri.startsWith('http')) &&
+          _trackRepository != null) {
+        final resolvedUri = await _trackRepository.resolveStreamUri(
+          trackToPreload.mediaUri.isNotEmpty ? trackToPreload.mediaUri : trackToPreload.id,
+          trackToPreload,
+        );
+        if (resolvedUri.isNotEmpty && (resolvedUri.startsWith('http://') || resolvedUri.startsWith('https://'))) {
+          trackToPreload = trackToPreload.copyWith(mediaUri: resolvedUri);
+        }
+      }
+
+      await _standbyEngine!.load(trackToPreload);
+      _preloadedTrack = trackToPreload;
+      _isNextTrackPreloaded = true;
+      _logger?.info('Standby engine preloaded track: ${trackToPreload.title}', tag: 'PlaybackRepository');
+    } catch (e) {
+      _logger?.warning('Failed to preload next track on standby engine: $e', tag: 'PlaybackRepository');
+      _preloadedTrack = null;
+      _isNextTrackPreloaded = false;
+    } finally {
+      _isNextTrackPreloading = false;
+    }
+  }
+
   Future<void> _handleTrackEnded() async {
+    if (_isCrossfading) return;
     final finishedTrack = _currentState.currentTrack;
     if (finishedTrack != null && _historyRepository != null) {
       final playedDur = _sessionHasQualified
@@ -405,6 +505,11 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
   Future<Result<void, Failure>> pause() async {
     try {
       await _audioEngine.pause();
+      if (_isCrossfading && _standbyEngine != null) {
+        try {
+          await _standbyEngine!.pause();
+        } catch (_) {}
+      }
       _currentState = _currentState.copyWith(status: PlaybackStatus.paused);
       _emitState();
       return const Result.ok(null);
@@ -427,6 +532,15 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
   Future<Result<void, Failure>> stop() async {
     try {
       await _audioEngine.stop();
+      if (_standbyEngine != null) {
+        try {
+          await _standbyEngine!.stop();
+        } catch (_) {}
+      }
+      _isCrossfading = false;
+      _isNextTrackPreloaded = false;
+      _isNextTrackPreloading = false;
+      _preloadedTrack = null;
       _currentState = _currentState.copyWith(
         status: PlaybackStatus.idle,
         position: Duration.zero,
@@ -456,65 +570,202 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
 
   @override
   Future<Result<void, Failure>> skipToNext() async {
-    if (_queue.isEmpty) {
+    if (_queue.isEmpty || !_queue.hasNext) {
       return const Result.ok(null);
     }
 
-    if (!_queue.hasNext) {
+    final nextTrack = _queue.peekNext();
+    if (nextTrack == null) {
       return const Result.ok(null);
+    }
+
+    // Overlapping crossfade branch
+    if (_crossfadeDuration > Duration.zero) {
+      await _performOverlappingCrossfade(nextTrack);
+      return const Result.ok(null);
+    }
+
+    // Instant gapless switch branch if next track already preloaded
+    if (_isNextTrackPreloaded && _preloadedTrack != null && _standbyEngine != null) {
+      final preloaded = _preloadedTrack!;
+      try {
+        await _standbyEngine!.play();
+        await _audioEngine.stop();
+
+        if (_audioEngine is AudioEngineImpl && _standbyEngine is AudioEngineImpl) {
+          await AudioEngineImpl.swapNativePlayers();
+        }
+
+        final temp = _audioEngine;
+        _audioEngine = _standbyEngine!;
+        _standbyEngine = temp;
+        _rebindPrimaryEngineSubscriptions();
+
+        _queue = _queue.next();
+
+        if (_activeSessionTrack != null && _historyRepository != null) {
+          final playedDur = _sessionHasQualified
+              ? _activeSessionTrack!.duration
+              : Duration(milliseconds: _accumulatedActivePlayMs);
+          if (_sessionHasQualified || playedDur.inMilliseconds >= 2000) {
+            unawaited(_historyRepository.recordPlay(
+              track: _activeSessionTrack!,
+              playedDuration: playedDur,
+              completed: true,
+            ));
+          }
+        }
+
+        _activeSessionTrack = preloaded;
+        _sessionHasQualified = false;
+        _accumulatedActivePlayMs = 0;
+        _lastPlayTimestamp = DateTime.now();
+        _lastObservedPosition = Duration.zero;
+
+        _isNextTrackPreloaded = false;
+        _preloadedTrack = null;
+
+        _currentState = _currentState.copyWith(
+          currentTrack: preloaded,
+          status: PlaybackStatus.playing,
+          position: Duration.zero,
+          duration: preloaded.duration,
+        );
+        _emitState();
+        return const Result.ok(null);
+      } catch (e) {
+        _logger?.warning('Gapless switch error: $e, falling back to standard load', tag: 'PlaybackRepository');
+      }
     }
 
     _queue = _queue.next();
-    final nextTrack = _queue.currentTrack;
-    if (nextTrack != null) {
-      if (_crossfadeDuration > Duration.zero) {
-        await _performCrossfadeTransition(() async {
-          await playTrack(nextTrack);
-        });
-        return const Result.ok(null);
-      } else {
-        return await playTrack(nextTrack);
-      }
+    final active = _queue.currentTrack;
+    if (active != null) {
+      return await playTrack(active);
     }
     return const Result.ok(null);
   }
 
-  Future<void> _performCrossfadeTransition(Future<void> Function() switchTrack) async {
-    if (_crossfadeDuration <= Duration.zero) {
-      await switchTrack();
-      return;
-    }
+  Future<void> _performOverlappingCrossfade([Track? targetNextTrack]) async {
+    if (_isCrossfading || _standbyEngine == null) return;
 
-    final originalVolume = _currentState.volume;
-    final halfMs = (_crossfadeDuration.inMilliseconds / 2).round().clamp(50, 2000);
-    const steps = 5;
-    final stepInterval = Duration(milliseconds: (halfMs / steps).round());
+    final nextTrack = targetNextTrack ?? _preloadedTrack ?? _queue.peekNext();
+    if (nextTrack == null) return;
 
-    // Fade out
-    for (int i = 1; i <= steps; i++) {
-      final stepVol = (originalVolume * (1.0 - (i / steps))).clamp(0.0, 1.0);
-      try {
-        await _audioEngine.setVolume(stepVol);
-      } catch (_) {}
-      await Future<void>.delayed(stepInterval);
-    }
+    _isCrossfading = true;
+    _logger?.info('Starting overlapping crossfade transition to ${nextTrack.title}', tag: 'PlaybackRepository');
 
-    // Switch track
-    await switchTrack();
-
-    // Fade in
-    for (int i = 1; i <= steps; i++) {
-      final stepVol = (originalVolume * (i / steps)).clamp(0.0, 1.0);
-      try {
-        await _audioEngine.setVolume(stepVol);
-      } catch (_) {}
-      await Future<void>.delayed(stepInterval);
-    }
-
-    // Restore volume target
     try {
-      await _audioEngine.setVolume(originalVolume);
-    } catch (_) {}
+      Track preparedTrack = nextTrack;
+      if (!_isNextTrackPreloaded || _preloadedTrack?.id != nextTrack.id) {
+        if (preparedTrack.sourceType == TrackSourceType.remoteStream &&
+            (preparedTrack.mediaUri.isEmpty || !preparedTrack.mediaUri.startsWith('http')) &&
+            _trackRepository != null) {
+          final resolvedUri = await _trackRepository.resolveStreamUri(
+            preparedTrack.mediaUri.isNotEmpty ? preparedTrack.mediaUri : preparedTrack.id,
+            preparedTrack,
+          );
+          if (resolvedUri.isNotEmpty && (resolvedUri.startsWith('http://') || resolvedUri.startsWith('https://'))) {
+            preparedTrack = preparedTrack.copyWith(mediaUri: resolvedUri);
+          }
+        }
+        await _standbyEngine!.load(preparedTrack);
+        _preloadedTrack = preparedTrack;
+        _isNextTrackPreloaded = true;
+      }
+
+      final activeNextTrack = _preloadedTrack ?? preparedTrack;
+      final originalVolume = _currentState.volume;
+
+      // Start standby player at zero volume while primary continues playing
+      await _standbyEngine!.setVolume(0.0);
+      await _standbyEngine!.play();
+
+      // Overlapping volume ramp: outgoing drops 1.0 -> 0.0, incoming rises 0.0 -> 1.0
+      final durationMs = _crossfadeDuration.inMilliseconds.clamp(100, 10000);
+      const steps = 10;
+      final stepDelay = Duration(milliseconds: (durationMs / steps).round());
+
+      for (int i = 1; i <= steps; i++) {
+        final ratio = i / steps;
+        final outgoingVol = (originalVolume * (1.0 - ratio)).clamp(0.0, 1.0);
+        final incomingVol = (originalVolume * ratio).clamp(0.0, 1.0);
+
+        try {
+          await Future.wait([
+            _audioEngine.setVolume(outgoingVol),
+            _standbyEngine!.setVolume(incomingVol),
+          ]);
+        } catch (_) {}
+        await Future<void>.delayed(stepDelay);
+      }
+
+      // Stop outgoing player and restore baseline volume
+      try {
+        await _audioEngine.stop();
+        await _audioEngine.setVolume(originalVolume);
+      } catch (_) {}
+
+      // Swap native hardware media players if running on native platform
+      if (_audioEngine is AudioEngineImpl && _standbyEngine is AudioEngineImpl) {
+        await AudioEngineImpl.swapNativePlayers();
+      }
+
+      // Swap engine references
+      final temp = _audioEngine;
+      _audioEngine = _standbyEngine!;
+      _standbyEngine = temp;
+      _rebindPrimaryEngineSubscriptions();
+
+      // Advance queue
+      if (targetNextTrack != null && _queue.peekNext()?.id != targetNextTrack.id) {
+        final idx = _queue.currentList.indexWhere((t) => t.id == targetNextTrack.id);
+        if (idx >= 0) {
+          _queue = _queue.copyWith(currentIndex: idx);
+        } else {
+          _queue = _queue.next();
+        }
+      } else {
+        _queue = _queue.next();
+      }
+
+      // Record play completion for outgoing track in history
+      if (_activeSessionTrack != null && _historyRepository != null) {
+        final playedDur = _sessionHasQualified
+            ? _activeSessionTrack!.duration
+            : Duration(milliseconds: _accumulatedActivePlayMs);
+        if (_sessionHasQualified || playedDur.inMilliseconds >= 2000) {
+          unawaited(_historyRepository.recordPlay(
+            track: _activeSessionTrack!,
+            playedDuration: playedDur,
+            completed: true,
+          ));
+        }
+      }
+
+      // Reset active session tracking for newly promoted track
+      _activeSessionTrack = activeNextTrack;
+      _sessionHasQualified = false;
+      _accumulatedActivePlayMs = 0;
+      _lastPlayTimestamp = DateTime.now();
+      _lastObservedPosition = Duration.zero;
+
+      _isNextTrackPreloaded = false;
+      _preloadedTrack = null;
+
+      _currentState = _currentState.copyWith(
+        currentTrack: activeNextTrack,
+        status: PlaybackStatus.playing,
+        position: Duration.zero,
+        duration: activeNextTrack.duration,
+      );
+      _emitState();
+      _logger?.info('Overlapping crossfade complete. Now playing: ${activeNextTrack.title}', tag: 'PlaybackRepository');
+    } catch (e, stack) {
+      _logger?.error('Error during overlapping crossfade: $e', tag: 'PlaybackRepository', error: e, stackTrace: stack);
+    } finally {
+      _isCrossfading = false;
+    }
   }
 
   @override
@@ -689,6 +940,10 @@ class PlaybackRepositoryImpl implements PlaybackRepository {
     _posSub?.cancel();
     _durSub?.cancel();
     _stateController.close();
+    try {
+      _audioEngine.stop();
+      _standbyEngine?.stop();
+    } catch (_) {}
   }
 }
 

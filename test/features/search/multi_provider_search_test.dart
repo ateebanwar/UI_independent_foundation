@@ -19,7 +19,7 @@ class MockRemoteDataSource implements RemoteMusicDataSource {
   MockRemoteDataSource(this.responses);
 
   @override
-  Future<List<Track>> searchRemoteCatalog(String query) async {
+  Future<List<Track>> searchRemoteCatalog(String query, {int page = 1, int limit = 20}) async {
     final lower = query.toLowerCase();
     for (final key in responses.keys) {
       if (lower.contains(key.toLowerCase())) {
