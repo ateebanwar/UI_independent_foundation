@@ -1,6 +1,6 @@
-import 'package:echo_bloom/core/constants/app_constants.dart';
-import 'package:echo_bloom/core/theme/app_colors.dart';
+import 'package:echo_bloom/core/theme/lyrithm_theme.dart';
 import 'package:echo_bloom/features/library/library_providers.dart';
+import 'package:echo_bloom/features/onboarding/presentation/screens/splash_welcome_screen.dart';
 import 'package:echo_bloom/features/playback/playback_providers.dart';
 import 'package:echo_bloom/features/playlists/playlist_providers.dart';
 import 'package:echo_bloom/features/settings/settings_controller.dart';
@@ -10,62 +10,69 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Root application widget mounting [UncontrolledProviderScope].
 class EchoBloomApp extends StatelessWidget {
   final ProviderContainer container;
+  final Widget? home;
 
   const EchoBloomApp({
     super.key,
     required this.container,
+    this.home,
   });
 
   @override
   Widget build(BuildContext context) {
     return UncontrolledProviderScope(
       container: container,
-      child: const _AppView(),
+      child: _AppView(home: home),
     );
   }
 }
 
 class _AppView extends ConsumerWidget {
-  const _AppView();
+  final Widget? home;
+
+  const _AppView({this.home});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsControllerProvider);
+    final isDark = settings.themeMode == ThemeMode.dark;
+    final lyrithmTheme = isDark ? LyrithmThemeData.night() : LyrithmThemeData.day();
 
-    return MaterialApp(
-      title: AppConstants.appName,
-      debugShowCheckedModeBanner: false,
-      themeMode: settings.themeMode,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: AppColors.background,
-        colorScheme: const ColorScheme.light(
-          primary: AppColors.primaryPurple,
-          surface: AppColors.surface,
-          onSurface: AppColors.textNavy,
-          error: AppColors.errorRed,
+    return LyrithmTheme(
+      data: lyrithmTheme,
+      child: MaterialApp(
+        title: 'Lyrithm',
+        debugShowCheckedModeBanner: false,
+        themeMode: settings.themeMode,
+        theme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.light,
+          scaffoldBackgroundColor: LyrithmColors.dayBg,
+          colorScheme: const ColorScheme.light(
+            primary: LyrithmColors.dayGradientStart,
+            surface: LyrithmColors.daySurface,
+            onSurface: LyrithmColors.dayTextNavy,
+          ),
         ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.darkBackground,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.primaryPurple,
-          surface: AppColors.darkSurface,
-          onSurface: AppColors.darkText,
-          error: AppColors.errorRed,
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: LyrithmColors.nightBg,
+          colorScheme: const ColorScheme.dark(
+            primary: LyrithmColors.nightAccentTeal,
+            surface: LyrithmColors.nightSurface,
+            onSurface: LyrithmColors.nightTextPrimary,
+          ),
         ),
+        home: home ?? const SplashWelcomeScreen(),
       ),
-      home: const FoundationVerificationView(),
     );
   }
 }
 
 /// Headless Foundation Verification View.
 /// Displays operational status of all core subsystems.
-/// Ready to be replaced by new presentation layer in subsequent UI design phase.
+/// Preserved for foundation regression tests and diagnostics.
 class FoundationVerificationView extends ConsumerWidget {
   const FoundationVerificationView({super.key});
 
@@ -157,4 +164,3 @@ class FoundationVerificationView extends ConsumerWidget {
     );
   }
 }
-

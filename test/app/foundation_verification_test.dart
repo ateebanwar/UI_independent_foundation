@@ -7,7 +7,10 @@ void main() {
     final container = ProviderContainer();
 
     await tester.pumpWidget(
-      EchoBloomApp(container: container),
+      EchoBloomApp(
+        container: container,
+        home: const FoundationVerificationView(),
+      ),
     );
 
     await tester.pumpAndSettle();
