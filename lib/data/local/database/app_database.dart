@@ -50,7 +50,7 @@ class AppDatabase {
         factory = customFactory ?? (kIsWeb ? databaseFactoryFfiWebNoWebWorker : databaseFactoryFfi);
         dbPath = inMemoryPath;
       } else if (kIsWeb) {
-        factory = customFactory ?? databaseFactoryFfiWebNoWebWorker;
+        factory = customFactory ?? databaseFactoryFfiWeb;
         dbPath = _databaseName;
       } else if (defaultTargetPlatform == TargetPlatform.windows ||
           defaultTargetPlatform == TargetPlatform.linux ||
@@ -98,7 +98,7 @@ class AppDatabase {
       _logger?.error('Failed to initialize database, checking web fallback', tag: 'AppDatabase', error: e, stackTrace: stack);
       if (kIsWeb) {
         try {
-          final fallbackDb = await databaseFactoryFfiWeb.openDatabase(
+          final fallbackDb = await databaseFactoryFfiWebNoWebWorker.openDatabase(
             inMemoryDatabasePath,
             options: OpenDatabaseOptions(
               version: _migrator.latestVersion,

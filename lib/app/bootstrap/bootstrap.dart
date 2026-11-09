@@ -42,8 +42,12 @@ abstract final class AppBootstrap {
     final coordinator = StartupCoordinator(logger: logger);
     coordinator.registerTask(DatabaseInitTask(appDatabase));
 
-    // Execute critical tasks synchronously before app mount
-    await coordinator.runCriticalTasks();
+    // Execute critical tasks before app mount (with defensive fault-tolerance)
+    try {
+      await coordinator.runCriticalTasks();
+    } catch (e, stack) {
+      logger.error('Startup task error during bootstrap: $e', error: e, stackTrace: stack, tag: 'AppBootstrap');
+    }
 
     // 4. Create Riverpod ProviderContainer with overrides
     final container = ProviderContainer(
