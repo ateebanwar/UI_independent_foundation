@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:echo_bloom/core/theme/lyrithm_theme.dart';
 import 'package:echo_bloom/features/onboarding/presentation/widgets/gender_selector_widget.dart';
 import 'package:echo_bloom/features/onboarding/presentation/widgets/lyrithm_button.dart';
@@ -12,12 +13,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Screen 2 — Create Profile Screen for Project Lyrithm.
 ///
-/// Implements pixel-accurate neumorphic UI reproducing the primary design reference:
-/// - Top bar with Back button and Day/Night switcher.
-/// - Bold serif heading & offline subtitle.
+/// Pixel-accurate reproduction of the authoritative design reference (left phone mockup):
+/// - Top bar with Back button and "Select ⌵" pill.
+/// - Bold serif "Create Profile" heading & offline subtitle.
 /// - Sweeping embossed wave curve embracing circular avatar.
-/// - Sunken neumorphic inputs with dynamic "Age: XX" pill badge.
-/// - Male / Female / Other segmented selector.
+/// - Sunken inset inputs with dynamic "Age: XX" raised pill.
+/// - Segmented gender selector with active royal blue glow.
 /// - Midnight navy "Continue" button validating and persisting profile locally.
 class CreateProfileScreen extends ConsumerStatefulWidget {
   const CreateProfileScreen({super.key});
@@ -174,165 +175,217 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
     final theme = LyrithmTheme.of(context);
 
     return ResponsiveScreenWrapper(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Top Bar: Back Button & Theme Toggle
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Material(
-                color: Colors.transparent,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  onTap: () => Navigator.of(context).maybePop(),
-                  customBorder: const CircleBorder(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Icon(
-                      Icons.arrow_back_rounded,
-                      size: 26,
-                      color: theme.textPrimary,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final h = constraints.maxHeight;
+          final isCompact = h < 720;
+          final verticalGap = isCompact ? 10.0 : math.max(10.0, h * 0.016);
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+
+                  // 1. Top Bar: Back Button & "Select ⌵"
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Material(
+                          color: Colors.transparent,
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            onTap: () => Navigator.of(context).maybePop(),
+                            customBorder: const CircleBorder(),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Icon(
+                                Icons.arrow_back_rounded,
+                                size: 26,
+                                color: theme.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const ThemeToggleWidget(),
+                      ],
                     ),
                   ),
-                ),
-              ),
-              const ThemeToggleWidget(),
-            ],
-          ),
 
-          const SizedBox(height: 16),
+                  SizedBox(height: isCompact ? 8 : 12),
 
-          // 2. Heading: "Create Profile"
-          Text(
-            'Create Profile',
-            style: LyrithmTypography.titleMedium(theme),
-          ),
-
-          const SizedBox(height: 6),
-
-          // 3. Subtitle: "Stored 100% locally on your device. Never shared or uploaded."
-          Text(
-            'Stored 100% locally on your device. Never shared or uploaded.',
-            style: LyrithmTypography.caption(theme),
-          ),
-
-          const SizedBox(height: 18),
-
-          // 4. Sweeping Wave Curve embracing Avatar
-          SizedBox(
-            width: double.infinity,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned(
-                  top: 32,
-                  left: 0,
-                  right: 0,
-                  height: 64,
-                  child: CustomPaint(
-                    painter: WaveCurvePainter(
-                      style: WaveStyle.profileAvatar,
-                      isDark: theme.isDark,
-                      curveLine: theme.waveCurveLine,
-                      curveHighlight: theme.waveCurveHighlight,
+                  // 2. Heading: "Create Profile"
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Create Profile',
+                      style: LyrithmTypography.titleMedium(theme),
                     ),
                   ),
-                ),
-                NeumorphicAvatarWidget(
-                  avatarKey: _avatarKey,
-                  initial: _nameController.text.trim().isNotEmpty
-                      ? _nameController.text.trim()[0].toUpperCase()
-                      : 'U',
-                  onAvatarPicked: (avatar) {
-                    setState(() => _avatarKey = avatar);
-                  },
-                ),
-              ],
-            ),
-          ),
 
-          const SizedBox(height: 24),
+                  const SizedBox(height: 6),
 
-          // 5. Full Name Section
-          Text(
-            'Full Name',
-            style: LyrithmTypography.label(theme),
-          ),
-          const SizedBox(height: 8),
-          NeumorphicInputField(
-            controller: _nameController,
-            hintText: 'Enter your name',
-            errorText: _nameError,
-            onChanged: (val) {
-              if (_nameError != null) {
-                setState(() => _nameError = null);
-              } else {
-                setState(() {});
-              }
-            },
-          ),
+                  // 3. Subtitle
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Stored 100% locally on your device. Never shared or uploaded.',
+                      style: LyrithmTypography.caption(theme),
+                    ),
+                  ),
 
-          const SizedBox(height: 18),
+                  SizedBox(height: isCompact ? 8 : 14),
 
-          // 6. Date of Birth Section with dynamic "Age: XX" raised pill
-          Text(
-            'Date of Birth',
-            style: LyrithmTypography.label(theme),
-          ),
-          const SizedBox(height: 8),
-          NeumorphicInputField(
-            controller: _dobController,
-            hintText: 'Select date of birth',
-            readOnly: true,
-            onTap: () => _selectDate(context),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.surface,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: theme.badgeShadow(),
+                  // 4. Sweeping Wave Curve embracing Avatar (Screen-wide full bleed)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 156,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: WaveCurvePainter(
+                              style: WaveStyle.profileAvatar,
+                              isDark: theme.isDark,
+                              curveLine: theme.waveCurveLine,
+                              curveHighlight: theme.waveCurveHighlight,
+                            ),
+                          ),
+                        ),
+                        NeumorphicAvatarWidget(
+                          avatarKey: _avatarKey,
+                          initial: _nameController.text.trim().isNotEmpty
+                              ? _nameController.text.trim()[0].toUpperCase()
+                              : 'U',
+                          onAvatarPicked: (avatar) {
+                            setState(() => _avatarKey = avatar);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: verticalGap),
+
+                  // 5. Full Name Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Full Name',
+                          style: LyrithmTypography.label(theme),
+                        ),
+                        const SizedBox(height: 8),
+                        NeumorphicInputField(
+                          controller: _nameController,
+                          hintText: 'Enter your name',
+                          errorText: _nameError,
+                          onChanged: (val) {
+                            if (_nameError != null) {
+                              setState(() => _nameError = null);
+                            } else {
+                              setState(() {});
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: verticalGap),
+
+                  // 6. Date of Birth Section with "Age: 20" raised pill
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Date of Birth',
+                          style: LyrithmTypography.label(theme),
+                        ),
+                        const SizedBox(height: 8),
+                        NeumorphicInputField(
+                          controller: _dobController,
+                          hintText: 'Select date of birth',
+                          readOnly: true,
+                          onTap: () => _selectDate(context),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: theme.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: theme.badgeShadow(),
+                            ),
+                            child: Text(
+                              'Age: $_calculatedAge',
+                              style: const TextStyle(
+                                fontFamilyFallback: [
+                                  'Segoe UI',
+                                  'Roboto',
+                                  'Helvetica Neue',
+                                  'sans-serif'
+                                ],
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6E6C82),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: verticalGap),
+
+                  // 7. Gender Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Gender',
+                          style: LyrithmTypography.label(theme),
+                        ),
+                        const SizedBox(height: 8),
+                        GenderSelectorWidget(
+                          selectedGender: _selectedGender,
+                          onGenderChanged: (gender) {
+                            setState(() => _selectedGender = gender);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: isCompact ? 22 : 28),
+
+                  // 8. Midnight Navy Continue Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: LyrithmButton(
+                      label: 'Continue',
+                      style: LyrithmButtonStyle.darkNavy,
+                      isLoading: _isSubmitting,
+                      onPressed: _handleContinue,
+                    ),
+                  ),
+                ],
               ),
-              child: Text(
-                'Age: $_calculatedAge',
-                style: TextStyle(
-                  fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: theme.textSecondary,
-                ),
-              ),
             ),
-          ),
-
-          const SizedBox(height: 18),
-
-          // 7. Gender Section
-          Text(
-            'Gender',
-            style: LyrithmTypography.label(theme),
-          ),
-          const SizedBox(height: 8),
-          GenderSelectorWidget(
-            selectedGender: _selectedGender,
-            onGenderChanged: (gender) {
-              setState(() => _selectedGender = gender);
-            },
-          ),
-
-          const SizedBox(height: 28),
-
-          // 8. Midnight Navy Continue Button
-          LyrithmButton(
-            label: 'Continue',
-            style: LyrithmButtonStyle.darkNavy,
-            isLoading: _isSubmitting,
-            onPressed: _handleContinue,
-          ),
-
-          const SizedBox(height: 16),
-        ],
+          );
+        },
       ),
     );
   }

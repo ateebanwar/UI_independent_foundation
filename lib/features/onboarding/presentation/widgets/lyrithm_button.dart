@@ -2,16 +2,18 @@ import 'package:echo_bloom/core/theme/lyrithm_theme.dart';
 import 'package:flutter/material.dart';
 
 enum LyrithmButtonStyle {
-  primaryGradient, // Royal Blue gradient with glow (Setup to Continue)
+  primaryGradient, // Royal Blue gradient with glow (Setup to Continue →)
   darkNavy,        // Deep Midnight Navy (Continue)
 }
 
+/// Neumorphic action button styled to match the authoritative reference design.
 class LyrithmButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
   final LyrithmButtonStyle style;
   final bool isLoading;
   final String? trailingIconText;
+  final double height;
 
   const LyrithmButton({
     super.key,
@@ -20,6 +22,7 @@ class LyrithmButton extends StatefulWidget {
     this.style = LyrithmButtonStyle.primaryGradient,
     this.isLoading = false,
     this.trailingIconText,
+    this.height = 54,
   });
 
   @override
@@ -38,20 +41,17 @@ class _LyrithmButtonState extends State<LyrithmButton> {
     final decoration = isPrimary
         ? BoxDecoration(
             gradient: theme.primaryGradient,
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(widget.height / 2),
             boxShadow: enabled ? theme.buttonGlowShadow() : null,
           )
         : BoxDecoration(
             color: theme.darkButton,
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(widget.height / 2),
             boxShadow: enabled ? theme.darkButtonShadow() : null,
-            border: theme.isDark
-                ? Border.all(color: const Color(0x30477074), width: 1)
-                : null,
           );
 
     return AnimatedScale(
-      scale: _isPressed && enabled ? 0.975 : 1.0,
+      scale: _isPressed && enabled ? 0.98 : 1.0,
       duration: const Duration(milliseconds: 100),
       child: Material(
         color: Colors.transparent,
@@ -60,13 +60,13 @@ class _LyrithmButtonState extends State<LyrithmButton> {
           onHighlightChanged: (highlighted) {
             setState(() => _isPressed = highlighted);
           },
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(widget.height / 2),
           splashColor: Colors.white24,
           highlightColor: Colors.transparent,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             width: double.infinity,
-            height: 56,
+            height: widget.height,
             decoration: decoration,
             alignment: Alignment.center,
             child: widget.isLoading
@@ -90,7 +90,10 @@ class _LyrithmButtonState extends State<LyrithmButton> {
                         const SizedBox(width: 8),
                         Text(
                           widget.trailingIconText!,
-                          style: theme.buttonText.copyWith(fontSize: 18),
+                          style: theme.buttonText.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
                       ],
                     ],

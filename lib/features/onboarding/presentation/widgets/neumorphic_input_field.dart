@@ -1,7 +1,7 @@
 import 'package:echo_bloom/core/theme/lyrithm_theme.dart';
 import 'package:flutter/material.dart';
 
-/// Pixel-accurate sunken / inset neumorphic text input field matching the reference.
+/// Pixel-accurate sunken / inset neumorphic text input field matching the reference design.
 class NeumorphicInputField extends StatelessWidget {
   final TextEditingController? controller;
   final String hintText;
@@ -12,6 +12,7 @@ class NeumorphicInputField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final Widget? trailing;
+  final double height;
 
   const NeumorphicInputField({
     super.key,
@@ -24,6 +25,7 @@ class NeumorphicInputField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.trailing,
+    this.height = 50,
   });
 
   @override
@@ -40,7 +42,7 @@ class NeumorphicInputField extends StatelessWidget {
             borderRadius: 16,
           ),
           child: Container(
-            height: 52,
+            height: height,
             decoration: BoxDecoration(
               color: theme.surfaceInset,
               borderRadius: BorderRadius.circular(16),
@@ -59,7 +61,7 @@ class NeumorphicInputField extends StatelessWidget {
                     keyboardType: keyboardType,
                     style: TextStyle(
                       fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-                      fontSize: 15,
+                      fontSize: 14.5,
                       fontWeight: FontWeight.w500,
                       color: theme.textPrimary,
                     ),
@@ -70,7 +72,7 @@ class NeumorphicInputField extends StatelessWidget {
                       hintText: hintText,
                       hintStyle: TextStyle(
                         fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-                        fontSize: 15,
+                        fontSize: 14.5,
                         fontWeight: FontWeight.w400,
                         color: theme.textHint,
                       ),
@@ -83,7 +85,7 @@ class NeumorphicInputField extends StatelessWidget {
           ),
         ),
         if (errorText != null && errorText!.isNotEmpty) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           Padding(
             padding: const EdgeInsets.only(left: 4),
             child: Text(
@@ -119,7 +121,7 @@ class _NeumorphicInsetPainter extends CustomPainter {
     canvas.clipRRect(rrect);
 
     // Dark inner shadow at top-left
-    final darkShadowColor = isDark ? const Color(0xB0080D0E) : const Color(0x38141933);
+    final darkShadowColor = isDark ? const Color(0xB0080D0E) : const Color(0x3318133E);
     final darkPaint = Paint()
       ..color = darkShadowColor
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5.0);

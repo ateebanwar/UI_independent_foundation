@@ -88,9 +88,6 @@ void main() {
       // 4. Verify primary CTA button
       expect(find.text('Setup to Continue'), findsOneWidget);
       expect(find.text('→'), findsOneWidget);
-
-      // 5. Verify theme toggle presence
-      expect(find.byType(ThemeToggleWidget), findsOneWidget);
     });
 
     testWidgets('Tapping Setup to Continue navigates to Screen 2 (CreateProfileScreen)',
@@ -283,26 +280,24 @@ void main() {
       await tester.pumpWidget(
         EchoBloomApp(
           container: container,
-          home: const SplashWelcomeScreen(),
+          home: const CreateProfileScreen(),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Day'), findsOneWidget);
+      expect(find.text('Select'), findsOneWidget);
 
-      // Tap Theme toggle
+      // Tap Theme toggle (Select ⌵)
       await tester.tap(find.byType(ThemeToggleWidget));
       await tester.pumpAndSettle();
 
-      // Should now display 'Night'
-      expect(find.text('Night'), findsOneWidget);
+      // Theme mode should now be dark
       expect(container.read(settingsControllerProvider).themeMode, ThemeMode.dark);
 
-      // Tap again to switch back to Day
+      // Tap again to switch back to light
       await tester.tap(find.byType(ThemeToggleWidget));
       await tester.pumpAndSettle();
 
-      expect(find.text('Day'), findsOneWidget);
       expect(container.read(settingsControllerProvider).themeMode, ThemeMode.light);
     });
 

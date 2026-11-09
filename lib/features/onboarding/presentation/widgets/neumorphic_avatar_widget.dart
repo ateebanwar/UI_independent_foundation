@@ -3,7 +3,8 @@ import 'package:echo_bloom/core/theme/lyrithm_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-/// Circular neumorphic avatar with raised bezel, default initial, and camera selector.
+/// Circular neumorphic avatar with raised bezel, sunken inner well, default initial,
+/// midnight camera badge, and "Choose Profile Photo" link matching the reference design.
 class NeumorphicAvatarWidget extends StatelessWidget {
   final String? avatarKey;
   final String initial;
@@ -15,7 +16,7 @@ class NeumorphicAvatarWidget extends StatelessWidget {
     this.avatarKey,
     this.initial = 'U',
     this.onAvatarPicked,
-    this.size = 110,
+    this.size = 104,
   });
 
   Future<void> _pickImage(BuildContext context) async {
@@ -47,8 +48,8 @@ class NeumorphicAvatarWidget extends StatelessWidget {
           return ClipOval(
             child: Image.memory(
               bytes,
-              width: size * 0.78,
-              height: size * 0.78,
+              width: size * 0.80,
+              height: size * 0.80,
               fit: BoxFit.cover,
             ),
           );
@@ -61,9 +62,9 @@ class NeumorphicAvatarWidget extends StatelessWidget {
       initial.isNotEmpty ? initial[0].toUpperCase() : 'U',
       style: TextStyle(
         fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-        fontSize: size * 0.36,
-        fontWeight: FontWeight.w700,
-        color: theme.textSecondary.withValues(alpha: 0.85),
+        fontSize: size * 0.35,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF8C899E),
       ),
     );
   }
@@ -79,26 +80,26 @@ class NeumorphicAvatarWidget extends StatelessWidget {
           alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
-            // Outer raised neumorphic ring
+            // Outer raised neumorphic circle
             Container(
               width: size,
               height: size,
               decoration: BoxDecoration(
                 color: theme.surface,
                 shape: BoxShape.circle,
-                boxShadow: theme.raisedShadow(depth: 1.1, blur: 16),
+                boxShadow: theme.raisedShadow(depth: 1.15, blur: 16),
               ),
               child: Center(
-                // Inner sunken circle
+                // Inner sunken well
                 child: Container(
-                  width: size * 0.82,
-                  height: size * 0.82,
+                  width: size * 0.80,
+                  height: size * 0.80,
                   decoration: BoxDecoration(
                     color: theme.surfaceInset,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: theme.isDark ? const Color(0x60000000) : const Color(0x28141933),
+                        color: theme.isDark ? const Color(0x60000000) : const Color(0x2818133E),
                         offset: const Offset(2, 2.5),
                         blurRadius: 4,
                       ),
@@ -116,10 +117,10 @@ class NeumorphicAvatarWidget extends StatelessWidget {
               ),
             ),
 
-            // Camera button at bottom-right
+            // Camera button at bottom-right (~4 o'clock)
             Positioned(
               right: 0,
-              bottom: 4,
+              bottom: 2,
               child: Material(
                 color: Colors.transparent,
                 shape: const CircleBorder(),
@@ -127,16 +128,16 @@ class NeumorphicAvatarWidget extends StatelessWidget {
                   onTap: () => _pickImage(context),
                   customBorder: const CircleBorder(),
                   child: Container(
-                    width: 34,
-                    height: 34,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       color: theme.darkButton,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          offset: const Offset(0, 4),
-                          blurRadius: 8,
+                          color: Colors.black.withValues(alpha: 0.30),
+                          offset: const Offset(0, 3),
+                          blurRadius: 6,
                         ),
                       ],
                       border: Border.all(
@@ -147,7 +148,7 @@ class NeumorphicAvatarWidget extends StatelessWidget {
                     child: const Icon(
                       Icons.camera_alt_rounded,
                       color: Colors.white,
-                      size: 16,
+                      size: 15,
                     ),
                   ),
                 ),
@@ -155,20 +156,20 @@ class NeumorphicAvatarWidget extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         // "Choose Profile Photo" link
         InkWell(
           onTap: () => _pickImage(context),
           borderRadius: BorderRadius.circular(8),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             child: Text(
               'Choose Profile Photo',
               style: TextStyle(
                 fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
-                color: theme.isDark ? theme.accentPrimary : const Color(0xFF2E3B68),
+                color: theme.isDark ? theme.accentPrimary : const Color(0xFF2B2D5B),
               ),
             ),
           ),

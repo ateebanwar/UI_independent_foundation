@@ -15,10 +15,10 @@ class NeumorphicPillBadge extends StatelessWidget {
     final theme = LyrithmTheme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8.5),
       decoration: BoxDecoration(
         color: theme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: theme.badgeShadow(),
       ),
       child: Text(
