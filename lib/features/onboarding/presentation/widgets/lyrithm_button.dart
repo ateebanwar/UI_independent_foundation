@@ -2,11 +2,14 @@ import 'package:echo_bloom/core/theme/lyrithm_theme.dart';
 import 'package:flutter/material.dart';
 
 enum LyrithmButtonStyle {
-  primaryGradient, // Royal Blue gradient with glow (Setup to Continue →)
+  primaryGradient, // Blue/violet gradient with controlled ambient glow (Setup to Continue →)
   darkNavy,        // Deep Midnight Navy (Continue)
 }
 
 /// Neumorphic action button styled to match the authoritative reference design.
+///
+/// At reference resolution: 323 × 58 px with large pill-shaped corners and
+/// controlled, soft ambient drop shadow.
 class LyrithmButton extends StatefulWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -14,6 +17,7 @@ class LyrithmButton extends StatefulWidget {
   final bool isLoading;
   final String? trailingIconText;
   final double height;
+  final double? width;
 
   const LyrithmButton({
     super.key,
@@ -22,7 +26,8 @@ class LyrithmButton extends StatefulWidget {
     this.style = LyrithmButtonStyle.primaryGradient,
     this.isLoading = false,
     this.trailingIconText,
-    this.height = 54,
+    this.height = 58,
+    this.width,
   });
 
   @override
@@ -42,11 +47,19 @@ class _LyrithmButtonState extends State<LyrithmButton> {
         ? BoxDecoration(
             gradient: theme.primaryGradient,
             borderRadius: BorderRadius.circular(widget.height / 2),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
             boxShadow: enabled ? theme.buttonGlowShadow() : null,
           )
         : BoxDecoration(
             color: theme.darkButton,
             borderRadius: BorderRadius.circular(widget.height / 2),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.22),
+              width: 1.2,
+            ),
             boxShadow: enabled ? theme.darkButtonShadow() : null,
           );
 
@@ -65,7 +78,7 @@ class _LyrithmButtonState extends State<LyrithmButton> {
           highlightColor: Colors.transparent,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: double.infinity,
+            width: widget.width ?? double.infinity,
             height: widget.height,
             decoration: decoration,
             alignment: Alignment.center,

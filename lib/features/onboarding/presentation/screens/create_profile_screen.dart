@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:echo_bloom/core/theme/lyrithm_theme.dart';
 import 'package:echo_bloom/features/onboarding/presentation/widgets/gender_selector_widget.dart';
 import 'package:echo_bloom/features/onboarding/presentation/widgets/lyrithm_button.dart';
@@ -24,7 +25,8 @@ class CreateProfileScreen extends ConsumerStatefulWidget {
   const CreateProfileScreen({super.key});
 
   @override
-  ConsumerState<CreateProfileScreen> createState() => _CreateProfileScreenState();
+  ConsumerState<CreateProfileScreen> createState() =>
+      _CreateProfileScreenState();
 }
 
 class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
@@ -126,7 +128,9 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       _isSubmitting = true;
     });
 
-    final success = await ref.read(profileControllerProvider.notifier).saveProfile(
+    final success = await ref
+        .read(profileControllerProvider.notifier)
+        .saveProfile(
           name: name,
           dateOfBirth: _dateOfBirth,
           gender: _selectedGender,
@@ -153,18 +157,24 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
           ),
           backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 3),
         ),
       );
     } else {
-      final error = ref.read(profileControllerProvider).errorMessage ?? 'Failed to save profile';
+      final error =
+          ref.read(profileControllerProvider).errorMessage ??
+          'Failed to save profile';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error),
           backgroundColor: const Color(0xFFEF4444),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
@@ -202,12 +212,31 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                           child: InkWell(
                             onTap: () => Navigator.of(context).maybePop(),
                             customBorder: const CircleBorder(),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Icon(
-                                Icons.arrow_back_rounded,
-                                size: 26,
-                                color: theme.textPrimary,
+                            child: CustomPaint(
+                              foregroundPainter: _CircleButtonInnerShadowPainter(
+                                isDark: theme.isDark,
+                              ),
+                              child: Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: theme.isDark
+                                      ? const Color(0xFF1E2E32)
+                                      : const Color(0xFFFFFFFF),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: theme.isDark
+                                        ? const Color(0x30FFFFFF)
+                                        : const Color(0xFFFFFFFF),
+                                    width: 1.2,
+                                  ),
+                                  boxShadow: theme.badgeShadow(),
+                                ),
+                                child: Icon(
+                                  Icons.arrow_back_rounded,
+                                  size: 22,
+                                  color: theme.textPrimary,
+                                ),
                               ),
                             ),
                           ),
@@ -244,7 +273,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                   // 4. Sweeping Wave Curve embracing Avatar (Screen-wide full bleed)
                   SizedBox(
                     width: double.infinity,
-                    height: 156,
+                    height: isCompact ? 190 : 206,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
@@ -258,14 +287,18 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                             ),
                           ),
                         ),
-                        NeumorphicAvatarWidget(
-                          avatarKey: _avatarKey,
-                          initial: _nameController.text.trim().isNotEmpty
-                              ? _nameController.text.trim()[0].toUpperCase()
-                              : 'U',
-                          onAvatarPicked: (avatar) {
-                            setState(() => _avatarKey = avatar);
-                          },
+                        Positioned(
+                          top: isCompact ? 4 : 8,
+                          child: NeumorphicAvatarWidget(
+                            size: 148,
+                            avatarKey: _avatarKey,
+                            initial: _nameController.text.trim().isNotEmpty
+                                ? _nameController.text.trim()[0].toUpperCase()
+                                : 'U',
+                            onAvatarPicked: (avatar) {
+                              setState(() => _avatarKey = avatar);
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -318,26 +351,61 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                           hintText: 'Select date of birth',
                           readOnly: true,
                           onTap: () => _selectDate(context),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: theme.surface,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: theme.badgeShadow(),
+                          trailing: CustomPaint(
+                            foregroundPainter: _PillButtonInnerShadowPainter(
+                              isDark: theme.isDark,
+                              borderRadius: 20,
                             ),
-                            child: Text(
-                              'Age: $_calculatedAge',
-                              style: const TextStyle(
-                                fontFamilyFallback: [
-                                  'Segoe UI',
-                                  'Roboto',
-                                  'Helvetica Neue',
-                                  'sans-serif'
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                // Pure white like a sheet of paper (exact shade of white, zero gradient/tint)
+                                color: theme.isDark
+                                    ? const Color(0xFF223539)
+                                    : const Color(0xFFFFFFFF),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: theme.isDark
+                                      ? const Color(0x30FFFFFF)
+                                      : const Color(0xFFFFFFFF),
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: theme.isDark
+                                        ? const Color(0x60000000)
+                                        : const Color(0x2816114B),
+                                    offset: const Offset(1, 3),
+                                    blurRadius: 6,
+                                    spreadRadius: 0,
+                                  ),
+                                  BoxShadow(
+                                    color: theme.isDark
+                                        ? const Color(0x15FFFFFF)
+                                        : const Color(0xFFFFFFFF),
+                                    offset: const Offset(-1, -1),
+                                    blurRadius: 3,
+                                  ),
                                 ],
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF6E6C82),
+                              ),
+                              child: Text(
+                                'Age: $_calculatedAge',
+                                style: TextStyle(
+                                  fontFamilyFallback: const [
+                                    'Segoe UI',
+                                    'Roboto',
+                                    'Helvetica Neue',
+                                    'sans-serif',
+                                  ],
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.isDark
+                                      ? theme.textPrimary
+                                      : const Color(0xFF5A5872),
+                                ),
                               ),
                             ),
                           ),
@@ -354,10 +422,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Gender',
-                          style: LyrithmTypography.label(theme),
-                        ),
+                        Text('Gender', style: LyrithmTypography.label(theme)),
                         const SizedBox(height: 8),
                         GenderSelectorWidget(
                           selectedGender: _selectedGender,
@@ -389,4 +454,94 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       ),
     );
   }
+}
+
+class _CircleButtonInnerShadowPainter extends CustomPainter {
+  final bool isDark;
+
+  const _CircleButtonInnerShadowPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final path = Path()..addOval(rect);
+
+    canvas.save();
+    canvas.clipPath(path);
+
+    final darkColor = isDark ? const Color(0x40000000) : const Color(0x2016114B);
+    final darkPaint = Paint()
+      ..color = darkColor
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+
+    final darkPath = Path()
+      ..addRect(rect.inflate(10))
+      ..addOval(rect.shift(const Offset(1.5, 1.6)))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(darkPath, darkPaint);
+
+    final lightColor = isDark ? const Color(0x154E7A7E) : const Color(0x80FFFFFF);
+    final lightPaint = Paint()
+      ..color = lightColor
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+
+    final lightPath = Path()
+      ..addRect(rect.inflate(10))
+      ..addOval(rect.shift(const Offset(-1.5, -1.5)))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(lightPath, lightPaint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _CircleButtonInnerShadowPainter oldDelegate) =>
+      isDark != oldDelegate.isDark;
+}
+
+class _PillButtonInnerShadowPainter extends CustomPainter {
+  final bool isDark;
+  final double borderRadius;
+
+  const _PillButtonInnerShadowPainter({
+    required this.isDark,
+    required this.borderRadius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
+
+    canvas.save();
+    canvas.clipRRect(rrect);
+
+    final darkColor = isDark ? const Color(0x40000000) : const Color(0x2016114B);
+    final darkPaint = Paint()
+      ..color = darkColor
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+
+    final darkPath = Path()
+      ..addRect(rect.inflate(10))
+      ..addRRect(rrect.shift(const Offset(1.5, 1.5)))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(darkPath, darkPaint);
+
+    final lightColor = isDark ? const Color(0x154E7A7E) : const Color(0x80FFFFFF);
+    final lightPaint = Paint()
+      ..color = lightColor
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+
+    final lightPath = Path()
+      ..addRect(rect.inflate(10))
+      ..addRRect(rrect.shift(const Offset(-1.5, -1.5)))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(lightPath, lightPaint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _PillButtonInnerShadowPainter oldDelegate) =>
+      isDark != oldDelegate.isDark || borderRadius != oldDelegate.borderRadius;
 }

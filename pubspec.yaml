@@ -39,3 +39,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/fonts/
+  fonts:
+    - family: Georgia
+      fonts:
+        - asset: assets/fonts/Georgia.ttf
+        - asset: assets/fonts/Georgia-Bold.ttf
+          weight: 700

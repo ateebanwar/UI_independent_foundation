@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:echo_bloom/core/theme/lyrithm_theme.dart';
 import 'package:echo_bloom/features/onboarding/presentation/screens/create_profile_screen.dart';
 import 'package:echo_bloom/features/onboarding/presentation/widgets/lyrithm_button.dart';
@@ -10,13 +9,14 @@ import 'package:flutter/material.dart';
 
 /// Screen 1 — Splash / Welcome Screen for Project Lyrithm.
 ///
-/// Pixel-accurate reproduction of the authoritative design reference (right phone mockup):
-/// - Clean composition without clutter.
-/// - Centered 3D iridescent squircle logo.
-/// - Elegant serif "Lyrithm" typography & slate tagline.
-/// - Side-by-side raised pills: "100% Offline" & "Zero Cloud Tracking".
-/// - Screen-wide embossed organic S-curve wave contour.
-/// - Glowing royal blue "Setup to Continue →" CTA.
+/// Pixel-accurate reproduction of the authoritative design reference (Image 1):
+/// - Soft cream/off-white rounded surface with ~8 px outer ambient inset.
+/// - Prominent 184 × 185 px squircle 3D iridescent music note logo.
+/// - 56 px Georgia serif bold "Lyrithm" display title.
+/// - 21 px slate grey "Let your music bloom." tagline.
+/// - Raised neumorphic badges: "100% Offline" (116×35) & "Zero Cloud Tracking" (174×35).
+/// - Elegant screen-wide embossed decorative S-curve wave boundary.
+/// - 323 × 58 px royal blue/violet gradient "Setup to Continue →" CTA with controlled glow.
 class SplashWelcomeScreen extends StatelessWidget {
   const SplashWelcomeScreen({super.key});
 
@@ -29,21 +29,23 @@ class SplashWelcomeScreen extends StatelessWidget {
         builder: (context, constraints) {
           final h = constraints.maxHeight;
           final w = constraints.maxWidth;
-          final isCompact = h < 640;
+          final isCompact = h < 700;
 
-          final logoSize = (w * 0.44).clamp(118.0, 150.0);
-          final topPadding = isCompact ? 16.0 : math.max(20.0, h * 0.08);
-          final logoBottomGap = isCompact ? 14.0 : math.max(14.0, h * 0.035);
-          final titleBottomGap = isCompact ? 6.0 : math.max(6.0, h * 0.012);
-          final tagBottomGap = isCompact ? 16.0 : math.max(16.0, h * 0.038);
-          final bottomPadding = isCompact ? 16.0 : math.max(18.0, h * 0.045);
+          // Proportions calibrated directly against reference Image 1 (405 × 811)
+          final logoSize = (w * 0.475).clamp(140.0, 185.0);
+          final topPadding = isCompact ? 16.0 : (h * 0.203).clamp(40.0, 161.0);
+          final logoBottomGap = isCompact ? 14.0 : (h * 0.043).clamp(14.0, 34.0);
+          final titleBottomGap = isCompact ? 4.0 : (h * 0.011).clamp(4.0, 9.0);
+          final tagBottomGap = isCompact ? 16.0 : (h * 0.055).clamp(16.0, 44.0);
+          final bottomPadding = isCompact ? 16.0 : (h * 0.045).clamp(16.0, 36.0);
+          final buttonWidth = (w - 48).clamp(280.0, 323.0);
 
           Widget content = Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(height: topPadding),
 
-              // 1. Centered 3D Squircle Logo
+              // 1. Centered 3D Squircle Logo (185 × 185 px at baseline)
               Hero(
                 tag: 'lyrithm_logo',
                 child: LyrithmLogoWidget(size: logoSize),
@@ -51,7 +53,7 @@ class SplashWelcomeScreen extends StatelessWidget {
 
               SizedBox(height: logoBottomGap),
 
-              // 2. App Title: "Lyrithm" (Deep navy bold serif)
+              // 2. App Title: "Lyrithm" (Large serif display typography, 56 px)
               Text(
                 'Lyrithm',
                 textAlign: TextAlign.center,
@@ -60,7 +62,7 @@ class SplashWelcomeScreen extends StatelessWidget {
 
               SizedBox(height: titleBottomGap),
 
-              // 3. Tagline: "Let your music bloom."
+              // 3. Tagline: "Let your music bloom." (21 px regular)
               Text(
                 'Let your music bloom.',
                 textAlign: TextAlign.center,
@@ -69,7 +71,7 @@ class SplashWelcomeScreen extends StatelessWidget {
 
               SizedBox(height: tagBottomGap),
 
-              // 4. Feature Badges: "100% Offline" & "Zero Cloud Tracking"
+              // 4. Feature Badges: "100% Offline" (116x35) & "Zero Cloud Tracking" (174x35)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: FittedBox(
@@ -77,9 +79,17 @@ class SplashWelcomeScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      NeumorphicPillBadge(label: '100% Offline'),
+                      NeumorphicPillBadge(
+                        label: '100% Offline',
+                        width: 116,
+                        height: 35,
+                      ),
                       SizedBox(width: 12),
-                      NeumorphicPillBadge(label: 'Zero Cloud Tracking'),
+                      NeumorphicPillBadge(
+                        label: 'Zero Cloud Tracking',
+                        width: 174,
+                        height: 35,
+                      ),
                     ],
                   ),
                 ),
@@ -87,30 +97,16 @@ class SplashWelcomeScreen extends StatelessWidget {
 
               if (!isCompact) const Spacer(),
 
-              if (isCompact) const SizedBox(height: 20),
+              if (isCompact) const SizedBox(height: 24),
 
-              // 5. Embossed S-Curve Wave flowing across the bottom
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: CustomPaint(
-                  painter: WaveCurvePainter(
-                    style: WaveStyle.splashBottom,
-                    isDark: theme.isDark,
-                    curveLine: theme.waveCurveLine,
-                    curveHighlight: theme.waveCurveHighlight,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // 6. Primary Action: "Setup to Continue →"
+              // 5. Primary Action: "Setup to Continue →" (323 × 58 px)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: LyrithmButton(
                   label: 'Setup to Continue',
                   trailingIconText: '→',
+                  width: buttonWidth,
+                  height: 58,
                   style: LyrithmButtonStyle.primaryGradient,
                   onPressed: () {
                     Navigator.of(context).push(
@@ -143,14 +139,32 @@ class SplashWelcomeScreen extends StatelessWidget {
             ],
           );
 
-          if (isCompact) {
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: content,
-            );
-          }
-
-          return content;
+          return Stack(
+            children: [
+              // Screen-wide embossed decorative wave flowing across the lower section
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: WaveCurvePainter(
+                    style: WaveStyle.splashBottom,
+                    isDark: theme.isDark,
+                    curveLine: theme.waveCurveLine,
+                    curveHighlight: theme.waveCurveHighlight,
+                  ),
+                ),
+              ),
+              // Content layer
+              isCompact
+                  ? SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: content,
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      height: double.infinity,
+                      child: content,
+                    ),
+            ],
+          );
         },
       ),
     );

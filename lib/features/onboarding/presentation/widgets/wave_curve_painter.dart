@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 enum WaveStyle {
@@ -30,45 +31,64 @@ class WaveCurvePainter extends CustomPainter {
     final shadowPaint = Paint()
       ..color = curveLine
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
+      ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
 
     final highlightPaint = Paint()
       ..color = curveHighlight
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
+      ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
 
     if (style == WaveStyle.splashBottom) {
-      // Flowing S-curve across lower section above Setup button
-      final baseY = h * 0.55;
-      path.moveTo(0, baseY);
-      path.cubicTo(
-        w * 0.26, baseY + 28,
-        w * 0.60, baseY - 36,
-        w, baseY - 8,
-      );
+      // Natural smooth continuous organic wave with zero sharp corners / kinks:
+      // Mathematically continuous sinusoid with harmonic roundness
+      const segments = 120;
+      for (int i = 0; i <= segments; i++) {
+        final t = i / segments;
+        final x = w * t;
+        final theta = ((t - 0.49) / 0.58) * math.pi;
+        final y = h * (0.795 - 0.040 * math.sin(theta));
+        if (i == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
+        }
+      }
     } else {
-      // Create Profile Screen: Sweeping curve embracing avatar
-      final baseY = h * 0.42;
-      path.moveTo(0, baseY + 20);
+      // Create Profile Screen: Exact mathematical curve matching authoritative reference image.
+      // - Left: starts at (0, cy + 34), curves up smoothly to cy, and enters the avatar horizontally.
+      // - Center: avatar circle sits right on this horizontal equator line at cy.
+      // - Right: exits avatar horizontally at cy, runs flat to ~0.74w, then curves UPWARDS to (w, cy - 34).
+      final cy = h * 0.40;
+      final avatarRadius = math.min(74.0, w * 0.19);
+      final avatarLeft = w * 0.50 - avatarRadius;
+      final avatarRight = w * 0.50 + avatarRadius;
+
+      // 1. Left curve entering the avatar circle
+      path.moveTo(0, cy + 34);
       path.cubicTo(
-        w * 0.18, baseY - 10,
-        w * 0.32, baseY - 52,
-        w * 0.50, baseY - 54,
+        w * 0.12, cy + 32,
+        w * 0.22, cy,
+        w * 0.30, cy,
       );
+      path.lineTo(avatarLeft, cy);
+
+      // 2. Right curve exiting the avatar circle and sweeping upward
+      path.moveTo(avatarRight, cy);
+      path.lineTo(w * 0.74, cy);
       path.cubicTo(
-        w * 0.68, baseY - 54,
-        w * 0.82, baseY - 12,
-        w, baseY - 24,
+        w * 0.84, cy,
+        w * 0.94, cy - 32,
+        w, cy - 34,
       );
     }
 
-    // Specular highlight offset downwards by 1.2px for embossed groove effect
+    // Specular highlight offset slightly upwards for directional top-left illumination
     canvas.save();
-    canvas.translate(0, 1.2);
+    canvas.translate(0, -1.0);
     canvas.drawPath(path, highlightPaint);
     canvas.restore();
 

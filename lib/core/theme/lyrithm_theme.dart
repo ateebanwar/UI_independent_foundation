@@ -3,36 +3,51 @@ import 'package:flutter/material.dart';
 /// Semantic colors and design tokens for Lyrithm Day & Night neumorphism.
 /// Extracted and calibrated directly from the authoritative design reference.
 class LyrithmColors {
-  // Day Mode (Light Neumorphic — Authoritative Reference)
-  static const Color dayCanvasBgStart = Color(0xFFF9F3EA); // Warm cream ambient light
-  static const Color dayCanvasBgMid = Color(0xFFEDE5DE);   // Soft neutral transition
-  static const Color dayCanvasBgEnd = Color(0xFFC5C5DF);   // Cool lavender shadow
+  // Day Mode (Authoritative Reference Neumorphic Paper Theme)
+  static const Color dayCanvasBgStart = Color(0xFFFAF8FD);
+  static const Color dayCanvasBgMid = Color(0xFFF3EFF7);
+  static const Color dayCanvasBgEnd = Color(0xFFECE6F3);
 
-  static const Color dayBgTop = Color(0xFFF7F4EE);        // Phone surface gradient top
-  static const Color dayBgBottom = Color(0xFFE8E4EC);     // Phone surface gradient bottom
-  static const Color dayBackground = Color(0xFFEBE8EE);   // Phone solid fallback
+  static const Color dayBgTop = Color(0xFFFAF8FD);
+  static const Color dayBgMid = Color(0xFFF3EFF7);
+  static const Color dayBgBottom = Color(0xFFECE6F3);
+  static const Color dayBackground = Color(0xFFF3EFF7);
   static const Color dayBg = dayBackground;
 
-  static const Color daySurface = Color(0xFFEDE9EF);      // Raised buttons/cards/pills
-  static const Color daySurfaceElevated = Color(0xFFF4F0F6);
-  static const Color daySurfaceInset = Color(0xFFE2DFE7); // Inset inputs and inner avatar
+  static const Color daySurface = Color(0xFFFAF8FD);
+  static const Color daySurfaceElevated = Color(0xFFFFFFFF);
+  static const Color daySurfaceInset = Color(0xFFEBE6F3);
 
-  static const Color dayTextPrimary = Color(0xFF18133E);  // Deep midnight navy
+  static const Color dayTextPrimary = Color(
+    0xFF16114B,
+  ); // Deep midnight navy with royal undertone
   static const Color dayTextNavy = dayTextPrimary;
-  static const Color dayTextSecondary = Color(0xFF78768B);// Muted slate grey
-  static const Color dayTextHint = Color(0xFF9A97A8);     // Input field placeholder
-  static const Color dayTextBadge = Color(0xFF282645);    // Badge and pill text
+  static const Color dayTextSecondary = Color(0xFF636268); // Muted slate grey
+  static const Color dayTextHint = Color(0xFF9A97A8); // Input field placeholder
+  static const Color dayTextBadge = Color(0xFF16114B); // Badge and pill text
 
-  static const Color dayAccentBlue = Color(0xFF535AE8);   // Setup button gradient start
+  static const Color dayAccentBlue = Color(
+    0xFF5559DE,
+  ); // Setup button gradient start
   static const Color dayGradientStart = dayAccentBlue;
-  static const Color dayAccentBlueEnd = Color(0xFF3C42D3);// Setup button gradient end
-  static const Color dayDarkButton = Color(0xFF171838);   // Continue button midnight navy
+  static const Color dayAccentBlueEnd = Color(
+    0xFF4347D4,
+  ); // Setup button gradient end
+  static const Color dayDarkButton = Color(
+    0xFF16114B,
+  ); // Continue button midnight navy
 
   static const Color dayShadowLight = Color(0xFFFFFFFF);
-  static const Color dayShadowDark = Color(0x75B5B1C6);   // Soft neumorphic drop shadow
-  static const Color dayGlowBlue = Color(0x66535AE8);     // Glowing vibrant button shadow
-  static const Color dayCurveLine = Color(0xFFC7C3D3);    // Wave shadow contour
-  static const Color dayCurveHighlight = Color(0xE6FFFFFF); // Wave highlight line
+  static const Color dayShadowDark = Color(
+    0x3D16114B,
+  ); // Pronounced anamorphic shadow
+  static const Color dayGlowBlue = Color(
+    0x755559DE,
+  ); // Controlled glowing button shadow
+  static const Color dayCurveLine = Color(0xFFB8B2C7); // Wave shadow contour
+  static const Color dayCurveHighlight = Color(
+    0xF0FFFFFF,
+  ); // Wave highlight line
 
   // Night Mode (Muted Dark Teal Neumorphic)
   static const Color nightCanvasBgStart = Color(0xFF0F1719);
@@ -68,6 +83,7 @@ class LyrithmThemeData {
   final bool isDark;
   final Color background;
   final Color backgroundTop;
+  final Color backgroundMid;
   final Color backgroundBottom;
   final Color canvasStart;
   final Color canvasEnd;
@@ -89,6 +105,7 @@ class LyrithmThemeData {
     required this.isDark,
     required this.background,
     required this.backgroundTop,
+    required this.backgroundMid,
     required this.backgroundBottom,
     required this.canvasStart,
     required this.canvasEnd,
@@ -112,6 +129,7 @@ class LyrithmThemeData {
       isDark: false,
       background: LyrithmColors.dayBackground,
       backgroundTop: LyrithmColors.dayBgTop,
+      backgroundMid: LyrithmColors.dayBgMid,
       backgroundBottom: LyrithmColors.dayBgBottom,
       canvasStart: LyrithmColors.dayCanvasBgStart,
       canvasEnd: LyrithmColors.dayCanvasBgEnd,
@@ -140,6 +158,7 @@ class LyrithmThemeData {
       isDark: true,
       background: LyrithmColors.nightBackground,
       backgroundTop: LyrithmColors.nightBgTop,
+      backgroundMid: LyrithmColors.nightBackground,
       backgroundBottom: LyrithmColors.nightBgBottom,
       canvasStart: LyrithmColors.nightCanvasBgStart,
       canvasEnd: LyrithmColors.nightCanvasBgEnd,
@@ -155,7 +174,10 @@ class LyrithmThemeData {
       primaryGradient: LinearGradient(
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
-        colors: [LyrithmColors.nightAccentTeal, LyrithmColors.nightAccentTealEnd],
+        colors: [
+          LyrithmColors.nightAccentTeal,
+          LyrithmColors.nightAccentTealEnd,
+        ],
       ),
       darkButton: LyrithmColors.nightDarkButton,
       curveLine: LyrithmColors.nightCurveLine,
@@ -163,29 +185,32 @@ class LyrithmThemeData {
     );
   }
 
-  /// Phone screen background gradient
+  /// Phone container surface gradient matching reference
   LinearGradient get screenBackgroundGradient => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [backgroundTop, backgroundBottom],
-      );
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: isDark
+        ? [backgroundTop, backgroundBottom]
+        : [backgroundTop, backgroundMid, backgroundBottom],
+    stops: isDark ? const [0.0, 1.0] : const [0.0, 0.45, 1.0],
+  );
 
-  /// Ambient studio backdrop gradient (for wide browser viewports)
+  /// Ambient studio backdrop gradient (around the container)
   LinearGradient get canvasGradient => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: isDark
-            ? [LyrithmColors.nightCanvasBgStart, LyrithmColors.nightCanvasBgEnd]
-            : [
-                LyrithmColors.dayCanvasBgStart,
-                LyrithmColors.dayCanvasBgMid,
-                LyrithmColors.dayCanvasBgEnd,
-              ],
-        stops: isDark ? const [0.0, 1.0] : const [0.0, 0.45, 1.0],
-      );
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: isDark
+        ? [LyrithmColors.nightCanvasBgStart, LyrithmColors.nightCanvasBgEnd]
+        : [
+            LyrithmColors.dayCanvasBgStart,
+            LyrithmColors.dayCanvasBgMid,
+            LyrithmColors.dayCanvasBgEnd,
+          ],
+    stops: isDark ? const [0.0, 1.0] : const [0.0, 0.40, 1.0],
+  );
 
   /// Neumorphic raised double shadows (top-left highlight, bottom-right shadow).
-  List<BoxShadow> raisedShadow({double depth = 1.0, double blur = 14.0}) {
+  List<BoxShadow> raisedShadow({double depth = 1.0, double blur = 16.0}) {
     if (isDark) {
       return [
         BoxShadow(
@@ -196,50 +221,88 @@ class LyrithmThemeData {
         ),
         BoxShadow(
           color: LyrithmColors.nightShadowDark,
-          offset: Offset(4.5 * depth, 5.5 * depth),
-          blurRadius: blur * 1.2 * depth,
-          spreadRadius: -1,
+          offset: Offset(5 * depth, 8 * depth),
+          blurRadius: blur * 1.3 * depth,
+          spreadRadius: 1,
         ),
       ];
     } else {
       return [
+        // Top-left crisp specular highlight
         BoxShadow(
-          color: LyrithmColors.dayShadowLight,
+          color: const Color(0xFFFFFFFF),
           offset: Offset(-4 * depth, -4 * depth),
-          blurRadius: blur * 0.9 * depth,
-          spreadRadius: 0,
+          blurRadius: blur * 0.75 * depth,
+          spreadRadius: 1 * depth,
         ),
+        // Bottom-right rich, pronounced anamorphic shadow
         BoxShadow(
-          color: LyrithmColors.dayShadowDark,
-          offset: Offset(5 * depth, 6.5 * depth),
-          blurRadius: blur * 1.15 * depth,
+          color: const Color(0x3816114B),
+          offset: Offset(6 * depth, 10 * depth),
+          blurRadius: blur * 1.25 * depth,
+          spreadRadius: 1 * depth,
+        ),
+        // Ambient contact shadow
+        BoxShadow(
+          color: const Color(0x1F201B4D),
+          offset: Offset(2 * depth, 4 * depth),
+          blurRadius: blur * 0.45 * depth,
           spreadRadius: 0,
         ),
       ];
     }
   }
 
-  /// Subtle capsule / badge shadow.
+  /// Anamorphic raised badge/pill shadow.
   List<BoxShadow> badgeShadow() {
-    return raisedShadow(depth: 0.65, blur: 8.0);
+    return [
+      BoxShadow(
+        color: isDark ? const Color(0x25FFFFFF) : const Color(0xFFFFFFFF),
+        offset: const Offset(-3, -3),
+        blurRadius: 7,
+        spreadRadius: 0.5,
+      ),
+      BoxShadow(
+        color: isDark ? const Color(0x80000000) : const Color(0x3A16114B),
+        offset: const Offset(4, 7),
+        blurRadius: 13,
+        spreadRadius: 1.0,
+      ),
+      BoxShadow(
+        color: isDark ? const Color(0x40000000) : const Color(0x1C16114B),
+        offset: const Offset(1, 2),
+        blurRadius: 4,
+        spreadRadius: 0,
+      ),
+    ];
   }
 
   /// Glowing vibrant shadow for primary action buttons (Setup to Continue).
   List<BoxShadow> buttonGlowShadow() {
-    final glowColor = isDark ? LyrithmColors.nightGlowTeal : LyrithmColors.dayGlowBlue;
-    final ambientColor = isDark ? const Color(0x60000000) : const Color(0x28101438);
+    final glowColor = isDark
+        ? LyrithmColors.nightGlowTeal
+        : const Color(0x755559DE);
+    final ambientColor = isDark
+        ? const Color(0x80000000)
+        : const Color(0x4016114B);
     return [
       BoxShadow(
         color: glowColor,
-        offset: const Offset(0, 7),
-        blurRadius: 18,
-        spreadRadius: 0,
+        offset: const Offset(0, 8),
+        blurRadius: 20,
+        spreadRadius: 1,
       ),
       BoxShadow(
         color: ambientColor,
-        offset: const Offset(0, 12),
-        blurRadius: 24,
-        spreadRadius: -2,
+        offset: const Offset(0, 14),
+        blurRadius: 26,
+        spreadRadius: 0,
+      ),
+      BoxShadow(
+        color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.40),
+        offset: const Offset(0, -1),
+        blurRadius: 2,
+        spreadRadius: 0,
       ),
     ];
   }
@@ -249,27 +312,36 @@ class LyrithmThemeData {
     if (isDark) {
       return [
         const BoxShadow(
-          color: Color(0x1F477074),
+          color: Color(0x25477074),
           offset: Offset(-2, -2),
           blurRadius: 8,
         ),
         const BoxShadow(
-          color: Color(0x80000000),
-          offset: Offset(0, 8),
-          blurRadius: 18,
+          color: Color(0x90000000),
+          offset: Offset(0, 10),
+          blurRadius: 22,
+          spreadRadius: 1,
         ),
       ];
     } else {
       return [
         const BoxShadow(
-          color: Color(0x45101438),
-          offset: Offset(0, 8),
-          blurRadius: 20,
+          color: Color(0x5516114B),
+          offset: Offset(0, 10),
+          blurRadius: 24,
+          spreadRadius: 1,
         ),
         const BoxShadow(
-          color: Color(0x40FFFFFF),
+          color: Color(0x25000000),
+          offset: Offset(0, 4),
+          blurRadius: 8,
+          spreadRadius: 0,
+        ),
+        const BoxShadow(
+          color: Color(0x50FFFFFF),
           offset: Offset(-2, -2),
           blurRadius: 6,
+          spreadRadius: 0,
         ),
       ];
     }
@@ -278,69 +350,89 @@ class LyrithmThemeData {
   Color get waveCurveLine => curveLine;
   Color get waveCurveHighlight => curveHighlight;
 
-  // Typography Styles
+  // Typography Styles matching reference
   TextStyle get serifTitle => TextStyle(
-        fontFamilyFallback: const ['Georgia', 'Playfair Display', 'Cambria', 'Times New Roman', 'serif'],
-        fontSize: 38,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.6,
-        color: textPrimary,
-      );
+    fontFamily: 'Georgia',
+    fontFamilyFallback: const ['Playfair Display', 'Times New Roman', 'serif'],
+    fontSize: 56,
+    fontWeight: FontWeight.w700,
+    height: 1.05,
+    letterSpacing: -0.5,
+    color: textPrimary,
+  );
 
   TextStyle get serifHeading => TextStyle(
-        fontFamilyFallback: const ['Georgia', 'Playfair Display', 'Cambria', 'Times New Roman', 'serif'],
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.4,
-        color: textPrimary,
-      );
+    fontFamily: 'Georgia',
+    fontFamilyFallback: const ['Playfair Display', 'Times New Roman', 'serif'],
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.4,
+    color: textPrimary,
+  );
 
   TextStyle get tagline => TextStyle(
-        fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-        fontSize: 15.5,
-        fontWeight: FontWeight.w400,
-        color: textSecondary,
-      );
+    fontFamilyFallback: const [
+      'Segoe UI',
+      'Roboto',
+      'Helvetica Neue',
+      'sans-serif',
+    ],
+    fontSize: 21,
+    fontWeight: FontWeight.w400,
+    height: 1.1,
+    color: textSecondary,
+  );
 
   TextStyle get bodySubtitle => TextStyle(
-        fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-        fontSize: 13,
-        height: 1.35,
-        fontWeight: FontWeight.w400,
-        color: textSecondary,
-      );
+    fontFamilyFallback: const [
+      'Segoe UI',
+      'Roboto',
+      'Helvetica Neue',
+      'sans-serif',
+    ],
+    fontSize: 13,
+    height: 1.35,
+    fontWeight: FontWeight.w400,
+    color: textSecondary,
+  );
 
   TextStyle get fieldLabel => TextStyle(
-        fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: textPrimary,
-      );
+    fontFamilyFallback: const [
+      'Segoe UI',
+      'Roboto',
+      'Helvetica Neue',
+      'sans-serif',
+    ],
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: textPrimary,
+  );
 
   TextStyle get badgeText => TextStyle(
-        fontFamilyFallback: const ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-        fontSize: 12.5,
-        fontWeight: FontWeight.w600,
-        color: isDark ? textPrimary : textBadge,
-      );
+    fontFamilyFallback: const [
+      'Segoe UI',
+      'Roboto',
+      'Helvetica Neue',
+      'sans-serif',
+    ],
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: isDark ? textPrimary : textBadge,
+  );
 
   TextStyle get buttonText => const TextStyle(
-        fontFamilyFallback: ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-      );
+    fontFamilyFallback: ['Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+    fontSize: 16.5,
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+  );
 }
 
 /// InheritedWidget or context extension for convenient theme resolution.
 class LyrithmTheme extends InheritedWidget {
   final LyrithmThemeData data;
 
-  const LyrithmTheme({
-    super.key,
-    required this.data,
-    required super.child,
-  });
+  const LyrithmTheme({super.key, required this.data, required super.child});
 
   static LyrithmThemeData of(BuildContext context) {
     final theme = context.dependOnInheritedWidgetOfExactType<LyrithmTheme>();
@@ -348,7 +440,8 @@ class LyrithmTheme extends InheritedWidget {
   }
 
   @override
-  bool updateShouldNotify(LyrithmTheme oldWidget) => data.isDark != oldWidget.data.isDark;
+  bool updateShouldNotify(LyrithmTheme oldWidget) =>
+      data.isDark != oldWidget.data.isDark;
 }
 
 /// Static typography provider matching Lyrithm design system.

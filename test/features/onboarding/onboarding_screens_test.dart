@@ -285,20 +285,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Select'), findsOneWidget);
+      expect(find.text('Night'), findsOneWidget);
 
-      // Tap Theme toggle (Select ⌵)
+      // Tap Theme toggle (switches to Night Mode)
       await tester.tap(find.byType(ThemeToggleWidget));
       await tester.pumpAndSettle();
 
-      // Theme mode should now be dark
+      // Theme mode should now be dark, button displays 'Day'
       expect(container.read(settingsControllerProvider).themeMode, ThemeMode.dark);
+      expect(find.text('Day'), findsOneWidget);
 
       // Tap again to switch back to light
       await tester.tap(find.byType(ThemeToggleWidget));
       await tester.pumpAndSettle();
 
       expect(container.read(settingsControllerProvider).themeMode, ThemeMode.light);
+      expect(find.text('Night'), findsOneWidget);
     });
 
     testWidgets('Zero overflow verification across Desktop / Microsoft Edge wide viewport (1280x800)',
